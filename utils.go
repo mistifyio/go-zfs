@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"os/exec"
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 type command struct {
@@ -62,6 +64,9 @@ func (c *command) Run(arg ...string) ([][]string, error) {
 var propertyFields = make([]string, 0, 66)
 var propertyMap = map[string]string{}
 
+var zpoolPropertyFields = make([]string, 0, 66)
+var zpoolPropertyMap = map[string]string{}
+
 func init() {
 	st := reflect.TypeOf(Dataset{})
 	for i := 0; i < st.NumField(); i++ {
@@ -71,6 +76,17 @@ func init() {
 			key := strings.ToLower(f.Name)
 			propertyMap[key] = f.Name
 			propertyFields = append(propertyFields, key)
+		}
+	}
+
+	st = reflect.TypeOf(Zpool{})
+	for i := 0; i < st.NumField(); i++ {
+		f := st.Field(i)
+		// only look at exported values
+		if f.PkgPath == "" {
+			key := strings.ToLower(f.Name)
+			zpoolPropertyMap[key] = f.Name
+			zpoolPropertyFields = append(zpoolPropertyFields, key)
 		}
 	}
 }
@@ -142,4 +158,100 @@ func propsSlice(properties map[string]string) []string {
 		args = append(args, fmt.Sprintf("%s=%s", k, v))
 	}
 	return args
+}
+
+// based on https://github.com/dustin/go-humanize/blob/master/bytes.go
+const (
+	Byte  = 1
+	KByte = Byte * 1024
+	MByte = KByte * 1024
+	GByte = MByte * 1024
+	TByte = GByte * 1024
+	PByte = TByte * 1024
+	EByte = PByte * 1024
+)
+
+var bytesSizeTable = map[string]uint64{
+	"b": Byte,
+	"k": KByte,
+	"m": MByte,
+	"g": GByte,
+	"t": TByte,
+	"p": PByte,
+	"e": EByte,
+}
+
+func parseBytes(s string) (uint64, error) {
+	lastDigit := 0
+	for _, r := range s {
+		if !(unicode.IsDigit(r) || r == '.') {
+			break
+		}
+		lastDigit++
+	}
+
+	f, err := strconv.ParseFloat(s[:lastDigit], 64)
+	if err != nil {
+		return 0, err
+	}
+
+	extra := strings.ToLower(strings.TrimSpace(s[lastDigit:]))
+	if m, ok := bytesSizeTable[extra]; ok {
+		f *= float64(m)
+		if f >= math.MaxUint64 {
+			return 0, fmt.Errorf("too large: %v", s)
+		}
+		return uint64(f), nil
+	}
+
+	return 0, fmt.Errorf("unhandled size name: %v", extra)
+}
+
+func parseZpoolLine(line []string) (*Zpool, error) {
+	pool := Zpool{}
+
+	st := reflect.ValueOf(&pool).Elem()
+
+	for j, field := range zpoolPropertyFields {
+
+		fieldName := zpoolPropertyMap[field]
+
+		if fieldName == "" {
+			continue
+		}
+
+		f := st.FieldByName(fieldName)
+		value := line[j]
+
+		switch f.Kind() {
+
+		//sizes in zpool are apparently only availible in "human readable" form
+		case reflect.Uint64:
+			var v uint64
+			if value != "-" {
+				v, _ = parseBytes(value)
+			}
+			f.SetUint(v)
+
+		case reflect.String:
+			v := ""
+			if value != "-" {
+				v = value
+			}
+			f.SetString(v)
+
+		}
+	}
+	return &pool, nil
+}
+
+func parseZpoolLines(lines [][]string) ([]*Zpool, error) {
+	pools := make([]*Zpool, len(lines))
+
+	for i, line := range lines {
+		p, _ := parseZpoolLine(line)
+		pools[i] = p
+	}
+
+	return pools, nil
 }
