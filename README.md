@@ -2,6 +2,8 @@
 
 Simple wrappers for ZFS command line tools.
 
+[![GoDoc](https://godoc.org/github.com/mistifyio/go-zfs?status.svg)](https://godoc.org/github.com/mistifyio/go-zfs)
+
 ## Requirements ##
 
 You need a working ZFS setup.  To use on Ubuntu 14.04, setup ZFS:
