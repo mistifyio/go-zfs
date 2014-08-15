@@ -135,7 +135,7 @@ func TestVolumes(t *testing.T) {
 		ok(t, err)
 
 		// volumes are sometimes "busy" if you try to manipulate them right away
-		sleep(3)
+		sleep(1)
 
 		equals(t, "volume", v.Type)
 		volumes, err := zfs.Volumes("")
@@ -202,5 +202,12 @@ func TestClone(t *testing.T) {
 		ok(t, s.Destroy(false))
 
 		ok(t, f.Destroy(false))
+	})
+}
+
+func TestListZpool(t *testing.T) {
+	zpoolTest(t, func() {
+		_, err := zfs.ListZpools()
+		ok(t, err)
 	})
 }

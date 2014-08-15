@@ -1,10 +1,16 @@
 package zfs
 
-import ()
+import (
+	"strings"
+)
 
 // Zpool represents a ZFS Pool
 type Zpool struct {
-	Name string
+	Name      string
+	Health    string
+	Allocated uint64
+	Size      uint64
+	Free      uint64
 }
 
 // helper function to wrap typical calls to zpool
@@ -25,12 +31,12 @@ func prepend(s []string, v ...string) []string {
 
 // GetZpool retrieves a Zpool
 func GetZpool(name string) (*Zpool, error) {
-	_, err := zpool("list", "-Ho", "name", name)
+	out, err := zpool("list", "-Ho", strings.Join(zpoolPropertyFields, ","), name)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Zpool{Name: name}, nil
+	return parseZpoolLine(out[0])
 }
 
 // Datasets returns a slice of all datasets in a zpool
@@ -64,4 +70,13 @@ func CreateZpool(name string, properties map[string]string, args ...string) (*Zp
 func (z *Zpool) Destroy() error {
 	_, err := zpool("destroy", z.Name)
 	return err
+}
+
+// ListZpools list all zpools
+func ListZpools() ([]*Zpool, error) {
+	out, err := zpool("list", "-Ho", strings.Join(zpoolPropertyFields, ","))
+	if err != nil {
+		return nil, err
+	}
+	return parseZpoolLines(out)
 }
