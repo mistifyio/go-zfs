@@ -27,6 +27,27 @@ In the future, we hope to work directly with libzfs.
 
 The tests have decent examples for most functions.
 
+```go
+//assuming a zpool named test
+//error handling ommitted
+
+
+f, err := zfs.CreateFilesystem("test/snapshot-test", nil)
+ok(t, err)
+
+s, err := f.Snapshot("test", nil)
+ok(t, err)
+
+// snapshot is named "test/snapshot-test@test"
+
+c, err := s.Clone("test/clone-test", nil)
+
+err := c.Destroy()
+err := s.Destroy()
+err := f.Destroy()
+
+```
+
 # Contributing #
 
 See the [contributing guidelines](./CONTRIBUTING.md)
