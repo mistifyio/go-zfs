@@ -21,6 +21,7 @@ type Dataset struct {
 	Written       uint64
 	Volsize       uint64
 	Usedbydataset uint64
+	Quota         uint64
 }
 
 // helper function to wrap typical calls to zfs
