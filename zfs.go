@@ -172,3 +172,24 @@ func (d *Dataset) Snapshot(name string, properties map[string]string) (*Dataset,
 	}
 	return GetDataset(snapName)
 }
+
+// Children returns the children of the dataset. Depth of 0 does not limit recursion.
+func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
+	args := []string{"list", "-t", "all", "-rHpo", strings.Join(propertyFields, ",")}[:]
+	if depth > 0 {
+		args = append(args, "-d")
+		args = append(args, strconv.FormatUint(depth, 10))
+	}
+	args = append(args, d.Name)
+
+	out, err := zfs(args...)
+	if err != nil {
+		return nil, err
+	}
+	datasets, err := parseDatasetLines(out)
+	if err != nil {
+		return nil, err
+	}
+	// first element is the dataset itself
+	return datasets[1:len(datasets)], nil
+}
