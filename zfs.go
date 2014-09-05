@@ -172,6 +172,7 @@ func (d *Dataset) Snapshot(name string, properties map[string]string) (*Dataset,
 	return GetDataset(snapName)
 }
 
+// Children returns the children of the dataset. Depth of 0 does not limit recursion.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 	args := []string{"list", "-t", "all", "-rHpo", strings.Join(propertyFields, ",")}[:]
 	if depth > 0 {
