@@ -205,6 +205,28 @@ func TestClone(t *testing.T) {
 	})
 }
 
+func TestChildren(t *testing.T) {
+	zpoolTest(t, func() {
+		f, err := zfs.CreateFilesystem("test/snapshot-test", nil)
+		ok(t, err)
+
+		s, err := f.Snapshot("test", nil)
+		ok(t, err)
+
+		equals(t, "snapshot", s.Type)
+		equals(t, "test/snapshot-test@test", s.Name)
+
+		children, err := f.Children(0)
+		ok(t, err)
+
+		equals(t, 1, len(children))
+		equals(t, "test/snapshot-test@test", children[0].Name)
+
+		ok(t, s.Destroy(false))
+		ok(t, f.Destroy(false))
+	})
+}
+
 func TestListZpool(t *testing.T) {
 	zpoolTest(t, func() {
 		_, err := zfs.ListZpools()
