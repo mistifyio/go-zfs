@@ -158,11 +158,11 @@ func CreateFilesystem(name string, properties map[string]string) (*Dataset, erro
 }
 
 // Snapshot creates a snapshot
-func (d *Dataset) Snapshot(name string, properties map[string]string) (*Dataset, error) {
+func (d *Dataset) Snapshot(name string, recursive bool) (*Dataset, error) {
 	args := make([]string, 1, 4)
 	args[0] = "snapshot"
-	if properties != nil {
-		args = append(args, propsSlice(properties)...)
+	if recursive {
+		args = append(args, "-r")
 	}
 	snapName := fmt.Sprintf("%s@%s", d.Name, name)
 	args = append(args, snapName)
