@@ -2,7 +2,6 @@ package zfs_test
 
 import (
 	"fmt"
-	"github.com/mistifyio/go-zfs"
 	"io/ioutil"
 	"math"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/mistifyio/go-zfs"
 )
 
 func sleep(delay int) {
@@ -161,7 +162,7 @@ func TestSnapshot(t *testing.T) {
 			equals(t, "filesystem", filesystem.Type)
 		}
 
-		s, err := f.Snapshot("test", nil)
+		s, err := f.Snapshot("test", false)
 		ok(t, err)
 
 		equals(t, "snapshot", s.Type)
@@ -186,7 +187,7 @@ func TestClone(t *testing.T) {
 			equals(t, "filesystem", filesystem.Type)
 		}
 
-		s, err := f.Snapshot("test", nil)
+		s, err := f.Snapshot("test", false)
 		ok(t, err)
 
 		equals(t, "snapshot", s.Type)
@@ -210,7 +211,7 @@ func TestChildren(t *testing.T) {
 		f, err := zfs.CreateFilesystem("test/snapshot-test", nil)
 		ok(t, err)
 
-		s, err := f.Snapshot("test", nil)
+		s, err := f.Snapshot("test", false)
 		ok(t, err)
 
 		equals(t, "snapshot", s.Type)
@@ -231,5 +232,41 @@ func TestListZpool(t *testing.T) {
 	zpoolTest(t, func() {
 		_, err := zfs.ListZpools()
 		ok(t, err)
+	})
+}
+
+func TestRollback(t *testing.T) {
+	zpoolTest(t, func() {
+		f, err := zfs.CreateFilesystem("test/snapshot-test", nil)
+		ok(t, err)
+
+		filesystems, err := zfs.Filesystems("")
+		ok(t, err)
+
+		for _, filesystem := range filesystems {
+			equals(t, "filesystem", filesystem.Type)
+		}
+
+		s1, err := f.Snapshot("test", false)
+		ok(t, err)
+
+		_, err = f.Snapshot("test2", false)
+		ok(t, err)
+
+		s3, err := f.Snapshot("test3", false)
+		ok(t, err)
+
+		err = s3.Rollback(false)
+		ok(t, err)
+
+		err = s1.Rollback(false)
+		assert(t, ok != nil, "should error when rolling back beyond most recent without destroyMoreRecent = true")
+
+		err = s1.Rollback(true)
+		ok(t, err)
+
+		ok(t, s1.Destroy(false))
+
+		ok(t, f.Destroy(false))
 	})
 }
