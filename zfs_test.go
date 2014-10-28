@@ -2,7 +2,6 @@ package zfs_test
 
 import (
 	"fmt"
-	"github.com/mistifyio/go-zfs"
 	"io/ioutil"
 	"math"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/mistifyio/go-zfs"
 )
 
 func sleep(delay int) {
@@ -161,7 +162,7 @@ func TestSnapshot(t *testing.T) {
 			equals(t, "filesystem", filesystem.Type)
 		}
 
-		s, err := f.Snapshot("test", nil)
+		s, err := f.Snapshot("test", false)
 		ok(t, err)
 
 		equals(t, "snapshot", s.Type)
@@ -186,7 +187,7 @@ func TestClone(t *testing.T) {
 			equals(t, "filesystem", filesystem.Type)
 		}
 
-		s, err := f.Snapshot("test", nil)
+		s, err := f.Snapshot("test", false)
 		ok(t, err)
 
 		equals(t, "snapshot", s.Type)
@@ -210,7 +211,7 @@ func TestChildren(t *testing.T) {
 		f, err := zfs.CreateFilesystem("test/snapshot-test", nil)
 		ok(t, err)
 
-		s, err := f.Snapshot("test", nil)
+		s, err := f.Snapshot("test", false)
 		ok(t, err)
 
 		equals(t, "snapshot", s.Type)
