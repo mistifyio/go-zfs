@@ -234,3 +234,39 @@ func TestListZpool(t *testing.T) {
 		ok(t, err)
 	})
 }
+
+func TestRollback(t *testing.T) {
+	zpoolTest(t, func() {
+		f, err := zfs.CreateFilesystem("test/snapshot-test", nil)
+		ok(t, err)
+
+		filesystems, err := zfs.Filesystems("")
+		ok(t, err)
+
+		for _, filesystem := range filesystems {
+			equals(t, "filesystem", filesystem.Type)
+		}
+
+		s1, err := f.Snapshot("test", false)
+		ok(t, err)
+
+		_, err = f.Snapshot("test2", false)
+		ok(t, err)
+
+		s3, err := f.Snapshot("test3", false)
+		ok(t, err)
+
+		err = s3.Rollback(false)
+		ok(t, err)
+
+		err = s1.Rollback(false)
+		assert(t, ok != nil, "should error when rolling back beyond most recent without destroyMoreRecent = true")
+
+		err = s1.Rollback(true)
+		ok(t, err)
+
+		ok(t, s1.Destroy(false))
+
+		ok(t, f.Destroy(false))
+	})
+}

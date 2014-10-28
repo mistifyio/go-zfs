@@ -173,6 +173,23 @@ func (d *Dataset) Snapshot(name string, recursive bool) (*Dataset, error) {
 	return GetDataset(snapName)
 }
 
+// Rollback rolls back a given dataset to a previous snapshot
+func (d *Dataset) Rollback(destroyMoreRecent bool) error {
+	if d.Type != "snapshot" {
+		errors.New("can only rollback snapshots")
+	}
+
+	args := make([]string, 1, 3)
+	args[0] = "rollback"
+	if destroyMoreRecent {
+		args = append(args, "-r")
+	}
+	args = append(args, d.Name)
+
+	_, err := zfs(args...)
+	return err
+}
+
 // Children returns the children of the dataset. Depth of 0 does not limit recursion.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 	args := []string{"list", "-t", "all", "-rHpo", strings.Join(propertyFields, ",")}[:]
