@@ -88,6 +88,17 @@ func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error) {
 	return GetDataset(name)
 }
 
+// SendSnapshot sends a snapshot as a zfs stream
+func (d *Dataset) SendSnapshot(output io.Writer) error {
+	if d.Type != "snapshot" {
+		return errors.New("can only send snapshots")
+	}
+
+	c := command{Command: "zfs", Stdout: output}
+	_, err := c.Run("send", d.Name)
+	return err
+}
+
 // CreateVolume creates a new volume
 func CreateVolume(name string, size uint64, properties map[string]string) (*Dataset, error) {
 	args := make([]string, 4, 5)
