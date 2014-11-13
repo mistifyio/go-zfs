@@ -52,11 +52,17 @@ func Volumes(filter string) ([]*Dataset, error) {
 
 // GetDataset retrieves a single dataset
 func GetDataset(name string) (*Dataset, error) {
-	out, err := zfs("list", "-Hpo", strings.Join(propertyFields, ","), name)
+	out, err := zfs("get", "all", "-Hp", name)
 	if err != nil {
 		return nil, err
 	}
-	return parseDatasetLine(out[0])
+
+	ds := &Dataset{Name: name}
+	for _, line := range out {
+		ds.parseLine(line)
+	}
+
+	return ds, nil
 }
 
 // Clone clones a snapshot. An error will be returned if a non-snapshot is used
@@ -203,10 +209,12 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 
 // Children returns the children of the dataset. Depth of 0 does not limit recursion.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
-	args := []string{"list", "-t", "all", "-rHpo", strings.Join(propertyFields, ",")}[:]
+	args := []string{"get", "all", "-t", "all", "-Hp"}
 	if depth > 0 {
 		args = append(args, "-d")
 		args = append(args, strconv.FormatUint(depth, 10))
+	} else {
+		args = append(args, "-r")
 	}
 	args = append(args, d.Name)
 
@@ -214,10 +222,18 @@ func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 	if err != nil {
 		return nil, err
 	}
-	datasets, err := parseDatasetLines(out)
-	if err != nil {
-		return nil, err
+
+	datasets := make([]*Dataset, 0)
+	name := ""
+	var ds *Dataset
+	for _, line := range out {
+		if name != line[0] {
+			name = line[0]
+			ds = &Dataset{Name: name}
+			datasets = append(datasets, ds)
+		}
+		ds.parseLine(line)
 	}
-	// first element is the dataset itself
+
 	return datasets[1:len(datasets)], nil
 }

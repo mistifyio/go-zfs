@@ -1,9 +1,5 @@
 package zfs
 
-import (
-	"strings"
-)
-
 // Zpool represents a ZFS Pool
 type Zpool struct {
 	Name      string
@@ -31,12 +27,20 @@ func prepend(s []string, v ...string) []string {
 
 // GetZpool retrieves a Zpool
 func GetZpool(name string) (*Zpool, error) {
-	out, err := zpool("list", "-Ho", strings.Join(zpoolPropertyFields, ","), name)
+	out, err := zpool("get", "all", "-p", name)
 	if err != nil {
 		return nil, err
 	}
 
-	return parseZpoolLine(out[0])
+	// there is no -H
+	out = out[1:len(out)]
+
+	z := &Zpool{Name: name}
+	for _, line := range out {
+		z.parseLine(line)
+	}
+
+	return z, nil
 }
 
 // Datasets returns a slice of all datasets in a zpool
@@ -74,9 +78,22 @@ func (z *Zpool) Destroy() error {
 
 // ListZpools list all zpools
 func ListZpools() ([]*Zpool, error) {
-	out, err := zpool("list", "-Ho", strings.Join(zpoolPropertyFields, ","))
+	args := []string{"list", "-Ho", "name"}
+	out, err := zpool(args...)
 	if err != nil {
 		return nil, err
 	}
-	return parseZpoolLines(out)
+
+	// there is no -H
+	out = out[1:len(out)]
+
+	pools := make([]*Zpool, 0)
+	for _, line := range out {
+		z, err := GetZpool(line[0])
+		if err != nil {
+			return nil, err
+		}
+		pools = append(pools, z)
+	}
+	return pools, nil
 }
