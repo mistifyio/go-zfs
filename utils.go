@@ -146,7 +146,7 @@ func (z *Zpool) parseLine(line []string) {
 	case "allocated":
 		setUint(&z.Allocated, val)
 	case "size":
-		setUint(&z.Allocated, val)
+		setUint(&z.Size, val)
 	case "free":
 		setUint(&z.Free, val)
 	}
