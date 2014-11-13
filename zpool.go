@@ -4,7 +4,8 @@ import (
 	"strings"
 )
 
-// Zpool represents a ZFS Pool
+// Zpool is a ZFS zpool.  A pool is a top-level structure in ZFS, and can
+// contain many descendent datasets.
 type Zpool struct {
 	Name      string
 	Health    string
@@ -13,23 +14,13 @@ type Zpool struct {
 	Free      uint64
 }
 
-// helper function to wrap typical calls to zpool
+// zpool is a helper function to wrap typical calls to zpool.
 func zpool(arg ...string) ([][]string, error) {
 	c := command{Command: "zpool"}
 	return c.Run(arg...)
 }
 
-func prepend(s []string, v ...string) []string {
-	l := len(v)
-	t := make([]string, len(s)+l)
-	copy(t[l:], s)
-	for i := range v {
-		t[i] = v[i]
-	}
-	return t
-}
-
-// GetZpool retrieves a Zpool
+// GetZpool retrieves a single ZFS zpool by name.
 func GetZpool(name string) (*Zpool, error) {
 	out, err := zpool("list", "-Ho", strings.Join(zpoolPropertyFields, ","), name)
 	if err != nil {
@@ -39,17 +30,20 @@ func GetZpool(name string) (*Zpool, error) {
 	return parseZpoolLine(out[0])
 }
 
-// Datasets returns a slice of all datasets in a zpool
+// Datasets returns a slice of all ZFS datasets in a zpool.
 func (z *Zpool) Datasets() ([]*Dataset, error) {
 	return Datasets(z.Name)
 }
 
-// Snapshots returns a slice of all snapshots in a zpool
+// Snapshots returns a slice of all ZFS snapshots in a zpool.
 func (z *Zpool) Snapshots() ([]*Dataset, error) {
 	return Snapshots(z.Name)
 }
 
-// CreateZpool creates a new zpool
+// CreateZpool creates a new ZFS zpool with the specified name, properties,
+// and optional arguments.
+// A full list of available ZFS properties and command-line arguments may be
+// found here: https://www.freebsd.org/cgi/man.cgi?zfs(8).
 func CreateZpool(name string, properties map[string]string, args ...string) (*Zpool, error) {
 	cli := make([]string, 1, 4)
 	cli[0] = "create"
@@ -66,13 +60,13 @@ func CreateZpool(name string, properties map[string]string, args ...string) (*Zp
 	return &Zpool{Name: name}, nil
 }
 
-// Destroy destroys a zpool
+// Destroy destroys a ZFS zpool by name.
 func (z *Zpool) Destroy() error {
 	_, err := zpool("destroy", z.Name)
 	return err
 }
 
-// ListZpools list all zpools
+// ListZpools list all ZFS zpools accessible on the current system.
 func ListZpools() ([]*Zpool, error) {
 	out, err := zpool("list", "-Ho", strings.Join(zpoolPropertyFields, ","))
 	if err != nil {
