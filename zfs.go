@@ -1,4 +1,4 @@
-// Package zfs provides wrappers around the ZFS command line tools
+// Package zfs provides wrappers around the ZFS command line tools.
 package zfs
 
 import (
