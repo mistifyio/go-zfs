@@ -28,7 +28,9 @@ func GetZpool(name string) (*Zpool, error) {
 
 	z := &Zpool{Name: name}
 	for _, line := range out {
-		z.parseLine(line)
+		if err := z.parseLine(line); err != nil {
+			return nil, err
+		}
 	}
 
 	return z, nil

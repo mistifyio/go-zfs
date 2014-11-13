@@ -70,21 +70,28 @@ func setString(field *string, value string) {
 	*field = v
 }
 
-func setUint(field *uint64, value string) {
+func setUint(field *uint64, value string) error {
 	var v uint64
 	if value != "-" {
-		v, _ = strconv.ParseUint(value, 10, 64)
+		var err error
+		v, err = strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return err
+		}
 	}
 	*field = v
+	return nil
 }
 
-func (ds *Dataset) parseLine(line []string) {
+func (ds *Dataset) parseLine(line []string) error {
 	prop := line[1]
 	val := line[2]
 
 	switch prop {
 	case "available":
-		setUint(&ds.Avail, val)
+		if err := setUint(&ds.Avail, val); err != nil {
+			return err
+		}
 	case "compression":
 		setString(&ds.Compression, val)
 	case "mountpoint":
@@ -94,12 +101,19 @@ func (ds *Dataset) parseLine(line []string) {
 	case "type":
 		setString(&ds.Type, val)
 	case "used":
-		setUint(&ds.Used, val)
+		if err := setUint(&ds.Used, val); err != nil {
+			return err
+		}
 	case "volsize":
-		setUint(&ds.Volsize, val)
+		if err := setUint(&ds.Volsize, val); err != nil {
+			return err
+		}
 	case "written":
-		setUint(&ds.Written, val)
+		if err := setUint(&ds.Written, val); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func listByType(t, filter string) ([]*Dataset, error) {
@@ -121,7 +135,9 @@ func listByType(t, filter string) ([]*Dataset, error) {
 			ds = &Dataset{Name: name}
 			datasets = append(datasets, ds)
 		}
-		ds.parseLine(line)
+		if err := ds.parseLine(line); err != nil {
+			return nil, err
+		}
 	}
 
 	return datasets, nil
@@ -136,17 +152,24 @@ func propsSlice(properties map[string]string) []string {
 	return args
 }
 
-func (z *Zpool) parseLine(line []string) {
+func (z *Zpool) parseLine(line []string) error {
 	prop := line[1]
 	val := line[2]
 	switch prop {
 	case "health":
 		setString(&z.Health, val)
 	case "allocated":
-		setUint(&z.Allocated, val)
+		if err := setUint(&z.Allocated, val); err != nil {
+			return err
+		}
 	case "size":
-		setUint(&z.Size, val)
+		if err := setUint(&z.Size, val); err != nil {
+			return err
+		}
 	case "free":
-		setUint(&z.Free, val)
+		if err := setUint(&z.Free, val); err != nil {
+			return err
+		}
 	}
+	return nil
 }
