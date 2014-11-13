@@ -137,7 +137,6 @@ func propsSlice(properties map[string]string) []string {
 }
 
 func (z *Zpool) parseLine(line []string) {
-	fmt.Println("parseLine", line[0])
 	prop := line[1]
 	val := line[2]
 	switch prop {
