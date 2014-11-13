@@ -1,9 +1,5 @@
 package zfs
 
-import (
-	"strings"
-)
-
 // Zpool is a ZFS zpool.  A pool is a top-level structure in ZFS, and can
 // contain many descendent datasets.
 type Zpool struct {
@@ -22,12 +18,22 @@ func zpool(arg ...string) ([][]string, error) {
 
 // GetZpool retrieves a single ZFS zpool by name.
 func GetZpool(name string) (*Zpool, error) {
-	out, err := zpool("list", "-Ho", strings.Join(zpoolPropertyFields, ","), name)
+	out, err := zpool("get", "all", "-p", name)
 	if err != nil {
 		return nil, err
 	}
 
-	return parseZpoolLine(out[0])
+	// there is no -H
+	out = out[1:len(out)]
+
+	z := &Zpool{Name: name}
+	for _, line := range out {
+		if err := z.parseLine(line); err != nil {
+			return nil, err
+		}
+	}
+
+	return z, nil
 }
 
 // Datasets returns a slice of all ZFS datasets in a zpool.
@@ -68,9 +74,22 @@ func (z *Zpool) Destroy() error {
 
 // ListZpools list all ZFS zpools accessible on the current system.
 func ListZpools() ([]*Zpool, error) {
-	out, err := zpool("list", "-Ho", strings.Join(zpoolPropertyFields, ","))
+	args := []string{"list", "-Ho", "name"}
+	out, err := zpool(args...)
 	if err != nil {
 		return nil, err
 	}
-	return parseZpoolLines(out)
+
+	// there is no -H
+	out = out[1:len(out)]
+
+	pools := make([]*Zpool, 0)
+	for _, line := range out {
+		z, err := GetZpool(line[0])
+		if err != nil {
+			return nil, err
+		}
+		pools = append(pools, z)
+	}
+	return pools, nil
 }
