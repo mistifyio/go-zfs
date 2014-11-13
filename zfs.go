@@ -9,6 +9,14 @@ import (
 	"strings"
 )
 
+// ZFS dataset types, which can indicate if a dataset is a filesystem,
+// snapshot, or volume.
+const (
+	DatasetFilesystem = "filesystem"
+	DatasetSnapshot   = "snapshot"
+	DatasetVolume     = "volume"
+)
+
 // Dataset is a ZFS dataset.  A dataset could be a clone, filesystem, snapshot,
 // or volume.  The Type struct member can be used to determine a dataset's type.
 //
@@ -44,21 +52,21 @@ func Datasets(filter string) ([]*Dataset, error) {
 // A filter argument may be passed to select a snapshot with the matching name,
 // or empty string ("") may be used to select all snapshots.
 func Snapshots(filter string) ([]*Dataset, error) {
-	return listByType("snapshot", filter)
+	return listByType(DatasetSnapshot, filter)
 }
 
 // Filesystems returns a slice of ZFS filesystems.
 // A filter argument may be passed to select a filesystem with the matching name,
 // or empty string ("") may be used to select all filesystems.
 func Filesystems(filter string) ([]*Dataset, error) {
-	return listByType("filesystem", filter)
+	return listByType(DatasetFilesystem, filter)
 }
 
 // Volumes returns a slice of ZFS volumes.
 // A filter argument may be passed to select a volume with the matching name,
 // or empty string ("") may be used to select all volumes.
 func Volumes(filter string) ([]*Dataset, error) {
-	return listByType("volume", filter)
+	return listByType(DatasetVolume, filter)
 }
 
 // GetDataset retrieves a single ZFS dataset by name.  This dataset could be
@@ -82,7 +90,7 @@ func GetDataset(name string) (*Dataset, error) {
 // Clone clones a ZFS snapshot and returns a clone dataset.
 // An error will be returned if the input dataset is not of snapshot type.
 func (d *Dataset) Clone(dest string, properties map[string]string) (*Dataset, error) {
-	if d.Type != "snapshot" {
+	if d.Type != DatasetSnapshot {
 		return nil, errors.New("can only clone snapshots")
 	}
 	args := make([]string, 2, 4)
@@ -114,7 +122,7 @@ func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error) {
 // SendSnapshot sends a ZFS stream of a snapshot to the input io.Writer.
 // An error will be returned if the input dataset is not of snapshot type.
 func (d *Dataset) SendSnapshot(output io.Writer) error {
-	if d.Type != "snapshot" {
+	if d.Type != DatasetSnapshot {
 		return errors.New("can only send snapshots")
 	}
 
@@ -228,7 +236,7 @@ func (d *Dataset) Snapshot(name string, recursive bool) (*Dataset, error) {
 // snapshots exist.
 // An error will be returned if the input dataset is not of snapshot type.
 func (d *Dataset) Rollback(destroyMoreRecent bool) error {
-	if d.Type != "snapshot" {
+	if d.Type != DatasetSnapshot {
 		errors.New("can only rollback snapshots")
 	}
 
