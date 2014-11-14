@@ -1,5 +1,17 @@
 package zfs
 
+// ZFS zpool states, which can indicate if a pool is online, offline,
+// degraded, etc.  More information regarding zpool states can be found here:
+// https://docs.oracle.com/cd/E19253-01/819-5461/gamno/index.html.
+const (
+	ZpoolOnline   = "ONLINE"
+	ZpoolDegraded = "DEGRADED"
+	ZpoolFaulted  = "FAULTED"
+	ZpoolOffline  = "OFFLINE"
+	ZpoolUnavail  = "UNAVAIL"
+	ZpoolRemoved  = "REMOVED"
+)
+
 // Zpool is a ZFS zpool.  A pool is a top-level structure in ZFS, and can
 // contain many descendent datasets.
 type Zpool struct {
