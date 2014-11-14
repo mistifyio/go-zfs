@@ -76,7 +76,7 @@ func TestDatasets(t *testing.T) {
 
 		ds, err := zfs.GetDataset("test")
 		ok(t, err)
-		equals(t, "filesystem", ds.Type)
+		equals(t, zfs.DatasetFilesystem, ds.Type)
 	})
 }
 
@@ -87,7 +87,7 @@ func TestSnapshots(t *testing.T) {
 		ok(t, err)
 
 		for _, snapshot := range snapshots {
-			equals(t, "snapshot", snapshot.Type)
+			equals(t, zfs.DatasetSnapshot, snapshot.Type)
 		}
 	})
 }
@@ -101,7 +101,7 @@ func TestFilesystems(t *testing.T) {
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
-			equals(t, "filesystem", filesystem.Type)
+			equals(t, zfs.DatasetFilesystem, filesystem.Type)
 		}
 
 		ok(t, f.Destroy(false))
@@ -123,7 +123,7 @@ func TestCreateFilesystemWithProperties(t *testing.T) {
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
-			equals(t, "filesystem", filesystem.Type)
+			equals(t, zfs.DatasetFilesystem, filesystem.Type)
 		}
 
 		ok(t, f.Destroy(false))
@@ -138,12 +138,12 @@ func TestVolumes(t *testing.T) {
 		// volumes are sometimes "busy" if you try to manipulate them right away
 		sleep(1)
 
-		equals(t, "volume", v.Type)
+		equals(t, zfs.DatasetVolume, v.Type)
 		volumes, err := zfs.Volumes("")
 		ok(t, err)
 
 		for _, volume := range volumes {
-			equals(t, "volume", volume.Type)
+			equals(t, zfs.DatasetVolume, volume.Type)
 		}
 
 		ok(t, v.Destroy(false))
@@ -159,13 +159,13 @@ func TestSnapshot(t *testing.T) {
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
-			equals(t, "filesystem", filesystem.Type)
+			equals(t, zfs.DatasetFilesystem, filesystem.Type)
 		}
 
 		s, err := f.Snapshot("test", false)
 		ok(t, err)
 
-		equals(t, "snapshot", s.Type)
+		equals(t, zfs.DatasetSnapshot, s.Type)
 
 		equals(t, "test/snapshot-test@test", s.Name)
 
@@ -184,19 +184,19 @@ func TestClone(t *testing.T) {
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
-			equals(t, "filesystem", filesystem.Type)
+			equals(t, zfs.DatasetFilesystem, filesystem.Type)
 		}
 
 		s, err := f.Snapshot("test", false)
 		ok(t, err)
 
-		equals(t, "snapshot", s.Type)
+		equals(t, zfs.DatasetSnapshot, s.Type)
 		equals(t, "test/snapshot-test@test", s.Name)
 
 		c, err := s.Clone("test/clone-test", nil)
 		ok(t, err)
 
-		equals(t, "filesystem", c.Type)
+		equals(t, zfs.DatasetFilesystem, c.Type)
 
 		ok(t, c.Destroy(false))
 
@@ -215,7 +215,7 @@ func TestSendSnapshot(t *testing.T) {
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
-			equals(t, "filesystem", filesystem.Type)
+			equals(t, zfs.DatasetFilesystem, filesystem.Type)
 		}
 
 		s, err := f.Snapshot("test", false)
@@ -244,7 +244,7 @@ func TestChildren(t *testing.T) {
 		s, err := f.Snapshot("test", false)
 		ok(t, err)
 
-		equals(t, "snapshot", s.Type)
+		equals(t, zfs.DatasetSnapshot, s.Type)
 		equals(t, "test/snapshot-test@test", s.Name)
 
 		children, err := f.Children(0)
@@ -274,7 +274,7 @@ func TestRollback(t *testing.T) {
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
-			equals(t, "filesystem", filesystem.Type)
+			equals(t, zfs.DatasetFilesystem, filesystem.Type)
 		}
 
 		s1, err := f.Snapshot("test", false)
