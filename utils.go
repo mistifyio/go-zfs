@@ -97,7 +97,7 @@ func (ds *Dataset) parseLine(line []string) error {
 	case "mountpoint":
 		setString(&ds.Mountpoint, val)
 	case "quota":
-		setUint(&ds.Quota, val)
+		err := setUint(&ds.Quota, val)
 	case "type":
 		setString(&ds.Type, val)
 	case "used":
