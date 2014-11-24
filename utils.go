@@ -87,11 +87,11 @@ func (ds *Dataset) parseLine(line []string) error {
 	prop := line[1]
 	val := line[2]
 
+	var err error
+
 	switch prop {
 	case "available":
-		if err := setUint(&ds.Avail, val); err != nil {
-			return err
-		}
+		err = setUint(&ds.Avail, val)
 	case "compression":
 		setString(&ds.Compression, val)
 	case "mountpoint":
@@ -101,19 +101,13 @@ func (ds *Dataset) parseLine(line []string) error {
 	case "type":
 		setString(&ds.Type, val)
 	case "used":
-		if err := setUint(&ds.Used, val); err != nil {
-			return err
-		}
+		err = setUint(&ds.Used, val)
 	case "volsize":
-		if err := setUint(&ds.Volsize, val); err != nil {
-			return err
-		}
+		err = setUint(&ds.Volsize, val)
 	case "written":
-		if err := setUint(&ds.Written, val); err != nil {
-			return err
-		}
+		err = setUint(&ds.Written, val)
 	}
-	return nil
+	return err
 }
 
 func listByType(t, filter string) ([]*Dataset, error) {
@@ -155,21 +149,18 @@ func propsSlice(properties map[string]string) []string {
 func (z *Zpool) parseLine(line []string) error {
 	prop := line[1]
 	val := line[2]
+
+	var err error
+
 	switch prop {
 	case "health":
 		setString(&z.Health, val)
 	case "allocated":
-		if err := setUint(&z.Allocated, val); err != nil {
-			return err
-		}
+		err = setUint(&z.Allocated, val)
 	case "size":
-		if err := setUint(&z.Size, val); err != nil {
-			return err
-		}
+		err = setUint(&z.Size, val)
 	case "free":
-		if err := setUint(&z.Free, val); err != nil {
-			return err
-		}
+		err = setUint(&z.Free, val)
 	}
-	return nil
+	return err
 }
