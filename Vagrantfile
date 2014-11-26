@@ -22,8 +22,8 @@ apt-get update
 apt-get install -y ubuntu-zfs
 
 cd /home/vagrant
-curl -z go1.3.1.linux-amd64.tar.gz -L -O https://storage.googleapis.com/golang/go1.3.1.linux-amd64.tar.gz
-tar -C /usr/local -zxf /home/vagrant/go1.3.1.linux-amd64.tar.gz
+curl -z go1.3.3.linux-amd64.tar.gz -L -O https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz
+tar -C /usr/local -zxf /home/vagrant/go1.3.3.linux-amd64.tar.gz
 
 cat << END > /etc/sudoers.d/go
 Defaults env_keep += "GOPATH"
