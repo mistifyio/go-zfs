@@ -269,7 +269,7 @@ func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 		return nil, err
 	}
 
-	datasets := make([]*Dataset, 0)
+	var datasets []*Dataset
 	name := ""
 	var ds *Dataset
 	for _, line := range out {

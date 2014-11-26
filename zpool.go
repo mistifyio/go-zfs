@@ -95,7 +95,8 @@ func ListZpools() ([]*Zpool, error) {
 	// there is no -H
 	out = out[1:len(out)]
 
-	pools := make([]*Zpool, 0)
+	var pools []*Zpool
+
 	for _, line := range out {
 		z, err := GetZpool(line[0])
 		if err != nil {
