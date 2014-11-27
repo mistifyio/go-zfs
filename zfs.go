@@ -152,13 +152,18 @@ func CreateVolume(name string, size uint64, properties map[string]string) (*Data
 	return GetDataset(name)
 }
 
-// Destroy destroys a ZFS dataset.  If the input parameter is set to true, any
+// Destroy destroys a ZFS dataset.  If the destroy parameter is set to true, any
 // descendents of the dataset will be recursively destroyed, including snapshots.
-func (d *Dataset) Destroy(recursive bool) error {
+// If the deferred parameter is set to true, the snapshot is marked for deferred
+// deletion.
+func (d *Dataset) Destroy(recursive, deferred bool) error {
 	args := make([]string, 1, 3)
 	args[0] = "destroy"
 	if recursive {
 		args = append(args, "-r")
+	}
+	if deferred {
+		args = append(args, "-d")
 	}
 	args = append(args, d.Name)
 	_, err := zfs(args...)
