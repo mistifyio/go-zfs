@@ -289,6 +289,5 @@ func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 			return nil, err
 		}
 	}
-
-	return datasets[1:len(datasets)], nil
+	return datasets[1:], nil
 }

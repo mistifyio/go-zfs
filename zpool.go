@@ -36,7 +36,7 @@ func GetZpool(name string) (*Zpool, error) {
 	}
 
 	// there is no -H
-	out = out[1:len(out)]
+	out = out[1:]
 
 	z := &Zpool{Name: name}
 	for _, line := range out {
@@ -93,7 +93,7 @@ func ListZpools() ([]*Zpool, error) {
 	}
 
 	// there is no -H
-	out = out[1:len(out)]
+	out = out[1:]
 
 	var pools []*Zpool
 
