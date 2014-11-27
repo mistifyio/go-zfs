@@ -77,6 +77,7 @@ func TestDatasets(t *testing.T) {
 		ds, err := zfs.GetDataset("test")
 		ok(t, err)
 		equals(t, zfs.DatasetFilesystem, ds.Type)
+		equals(t, uint64(19968), ds.Logicalused)
 	})
 }
 

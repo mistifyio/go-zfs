@@ -32,6 +32,7 @@ type Dataset struct {
 	Written       uint64
 	Volsize       uint64
 	Usedbydataset uint64
+	Logicalused   uint64
 	Quota         uint64
 }
 

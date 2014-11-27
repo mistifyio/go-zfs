@@ -106,6 +106,8 @@ func (ds *Dataset) parseLine(line []string) error {
 		err = setUint(&ds.Volsize, val)
 	case "written":
 		err = setUint(&ds.Written, val)
+	case "logicalused":
+		err = setUint(&ds.Logicalused, val)
 	}
 	return err
 }
