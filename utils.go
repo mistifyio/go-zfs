@@ -100,6 +100,8 @@ func (ds *Dataset) parseLine(line []string) error {
 		err = setUint(&ds.Quota, val)
 	case "type":
 		setString(&ds.Type, val)
+	case "origin":
+		setString(&ds.Origin, val)
 	case "used":
 		err = setUint(&ds.Used, val)
 	case "volsize":

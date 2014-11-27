@@ -24,6 +24,7 @@ const (
 // http://www.freebsd.org/cgi/man.cgi?zfs(8).
 type Dataset struct {
 	Name          string
+	Origin        string
 	Used          uint64
 	Avail         uint64
 	Mountpoint    string
