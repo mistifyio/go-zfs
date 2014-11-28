@@ -37,6 +37,38 @@ type Dataset struct {
 	Quota         uint64
 }
 
+type InodeType int
+
+const (
+	_                      = iota // 0 == unknown type
+	BLOCK_DEVICE InodeType = iota
+	CHARACTER_DEVICE
+	DIRECTORY
+	DOOR
+	NAMED_PIPE
+	SYMBOLIC_LINK
+	EVENT_PORT
+	SOCKET
+	FILE
+)
+
+type ChangeType int
+
+const (
+	_                  = iota // 0 == unknown type
+	REMOVED ChangeType = iota
+	CREATED
+	MODIFIED
+	RENAMED
+)
+
+type InodeChange struct {
+	Change  ChangeType
+	Type    InodeType
+	Path    string
+	NewPath string
+}
+
 // zfs is a helper function to wrap typical calls to zfs.
 func zfs(arg ...string) ([][]string, error) {
 	c := command{Command: "zfs"}
@@ -290,4 +322,20 @@ func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 		}
 	}
 	return datasets[1:], nil
+}
+
+// Diff returns changes between a snapshot and the given ZFS dataset.
+// The snapshot name must include the filesystem part as it is possible to
+// compare clones with their origin snapshots.
+func (d *Dataset) Diff(snapshot string) ([]*InodeChange, error) {
+	args := []string{"diff", "-FH", snapshot, d.Name}[:]
+	out, err := zfs(args...)
+	if err != nil {
+		return nil, err
+	}
+	inodeChanges, err := parseInodeChanges(out)
+	if err != nil {
+		return nil, err
+	}
+	return inodeChanges, nil
 }

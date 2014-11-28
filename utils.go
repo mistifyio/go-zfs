@@ -114,6 +114,115 @@ func (ds *Dataset) parseLine(line []string) error {
 	return err
 }
 
+/*
+ * from zfs diff`s escape function:
+ *
+ * Prints a file name out a character at a time.  If the character is
+ * not in the range of what we consider "printable" ASCII, display it
+ * as an escaped 3-digit octal value.  ASCII values less than a space
+ * are all control characters and we declare the upper end as the
+ * DELete character.  This also is the last 7-bit ASCII character.
+ * We choose to treat all 8-bit ASCII as not printable for this
+ * application.
+ */
+func unescapeFilepath(path string) (string, error) {
+	buf := make([]byte, 0, len(path))
+	llen := len(path)
+	for i := 0; i < llen; {
+		if path[i] == '\\' {
+			if llen < i+4 {
+				return "", fmt.Errorf("Invalid octal code: too short")
+			}
+			octalCode := path[(i + 1):(i + 4)]
+			val, err := strconv.ParseUint(octalCode, 8, 8)
+			if err != nil {
+				return "", fmt.Errorf("Invalid octal code: %v", err)
+			}
+			buf = append(buf, byte(val))
+			i += 4
+		} else {
+			buf = append(buf, path[i])
+			i++
+		}
+	}
+	return string(buf), nil
+}
+
+var changeTypeMap = map[string]ChangeType{
+	"-": REMOVED,
+	"+": CREATED,
+	"M": MODIFIED,
+	"R": RENAMED,
+}
+var inodeTypeMap = map[string]InodeType{
+	"B": BLOCK_DEVICE,
+	"C": CHARACTER_DEVICE,
+	"/": DIRECTORY,
+	">": DOOR,
+	"|": NAMED_PIPE,
+	"@": SYMBOLIC_LINK,
+	"P": EVENT_PORT,
+	"=": SOCKET,
+	"F": FILE,
+}
+
+func parseInodeChange(line []string) (*InodeChange, error) {
+	llen := len(line)
+	if llen < 1 {
+		return nil, fmt.Errorf("Empty line passed")
+	}
+
+	changeType := changeTypeMap[line[0]]
+	if changeType == 0 {
+		return nil, fmt.Errorf("Unknown change type '%s'", line[0])
+	}
+	if changeType == RENAMED {
+		if llen != 4 {
+			return nil, fmt.Errorf("Mismatching number of fields: expect 4, got: %d", llen)
+		}
+	} else if llen != 3 {
+		return nil, fmt.Errorf("Mismatching number of fields: expect 3, got: %d", llen)
+	}
+
+	inodeType := inodeTypeMap[line[1]]
+	if inodeType == 0 {
+		return nil, fmt.Errorf("Unknown inode type '%s'", line[1])
+	}
+
+	path, err := unescapeFilepath(line[2])
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse filename: %v", err)
+	}
+
+	var newPath string
+	if changeType == RENAMED {
+		newPath, err = unescapeFilepath(line[3])
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse filename: %v", err)
+		}
+	} else {
+		newPath = ""
+	}
+
+	return &InodeChange{changeType, inodeType, path, newPath}, nil
+}
+
+// example input
+//M       /       /testpool/bar/
+//+       F       /testpool/bar/hello.txt
+func parseInodeChanges(lines [][]string) ([]*InodeChange, error) {
+	changes := make([]*InodeChange, len(lines))
+
+	for i, line := range lines {
+		c, err := parseInodeChange(line)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse line %d of zfs diff: %v, got: '%s'", i, err, line)
+		}
+		changes[i] = c
+	}
+	return changes, nil
+}
+
 func listByType(t, filter string) ([]*Dataset, error) {
 	args := []string{"get", "all", "-t", t, "-rHp"}
 	if filter != "" {

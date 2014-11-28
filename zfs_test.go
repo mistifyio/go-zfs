@@ -302,3 +302,44 @@ func TestRollback(t *testing.T) {
 		ok(t, f.Destroy(false, false))
 	})
 }
+
+func TestDiff(t *testing.T) {
+	zpoolTest(t, func() {
+		fs, err := zfs.CreateFilesystem("test/origin", nil)
+		ok(t, err)
+
+		movedFile, err := os.Create(filepath.Join(fs.Mountpoint, "file"))
+		ok(t, err)
+
+		snapshot, err := fs.Snapshot("snapshot", false)
+		ok(t, err)
+
+		unicodeFile, err := os.Create(filepath.Join(fs.Mountpoint, "i ❤ unicode"))
+		ok(t, err)
+
+		err = os.Rename(movedFile.Name(), movedFile.Name()+"-new")
+		ok(t, err)
+
+		inodeChanges, err := fs.Diff(snapshot.Name)
+		ok(t, err)
+		equals(t, 3, len(inodeChanges))
+
+		equals(t, "/test/origin/", inodeChanges[0].Path)
+		equals(t, zfs.DIRECTORY, inodeChanges[0].Type)
+		equals(t, zfs.MODIFIED, inodeChanges[0].Change)
+
+		equals(t, "/test/origin/file", inodeChanges[1].Path)
+		equals(t, "/test/origin/file-new", inodeChanges[1].NewPath)
+		equals(t, zfs.FILE, inodeChanges[1].Type)
+		equals(t, zfs.RENAMED, inodeChanges[1].Change)
+
+		equals(t, "/test/origin/i ❤ unicode", inodeChanges[2].Path)
+		equals(t, zfs.FILE, inodeChanges[2].Type)
+		equals(t, zfs.CREATED, inodeChanges[2].Change)
+
+		ok(t, movedFile.Close())
+		ok(t, unicodeFile.Close())
+		ok(t, snapshot.Destroy(false, false))
+		ok(t, fs.Destroy(false, false))
+	})
+}
