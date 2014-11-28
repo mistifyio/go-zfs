@@ -69,6 +69,18 @@ type InodeChange struct {
 	NewPath string
 }
 
+type Logger interface {
+	Log(cmd []string)
+}
+
+var logger Logger
+
+// SetLogger set a log handler to log all commands including arguments before
+// they are executed
+func SetLogger(l Logger) {
+	logger = l
+}
+
 // zfs is a helper function to wrap typical calls to zfs.
 func zfs(arg ...string) ([][]string, error) {
 	c := command{Command: "zfs"}

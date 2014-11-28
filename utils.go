@@ -34,6 +34,9 @@ func (c *command) Run(arg ...string) ([][]string, error) {
 	cmd.Stderr = &stderr
 
 	debug := strings.Join([]string{cmd.Path, strings.Join(cmd.Args, " ")}, " ")
+	if logger != nil {
+		logger.Log(cmd.Args)
+	}
 	err := cmd.Run()
 
 	if err != nil {
