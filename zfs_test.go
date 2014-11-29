@@ -106,7 +106,7 @@ func TestFilesystems(t *testing.T) {
 			equals(t, zfs.DatasetFilesystem, filesystem.Type)
 		}
 
-		ok(t, f.Destroy(false, false))
+		ok(t, f.Destroy(zfs.DESTROY_DEFAULT))
 	})
 }
 
@@ -128,7 +128,7 @@ func TestCreateFilesystemWithProperties(t *testing.T) {
 			equals(t, zfs.DatasetFilesystem, filesystem.Type)
 		}
 
-		ok(t, f.Destroy(false, false))
+		ok(t, f.Destroy(zfs.DESTROY_DEFAULT))
 	})
 }
 
@@ -148,7 +148,7 @@ func TestVolumes(t *testing.T) {
 			equals(t, zfs.DatasetVolume, volume.Type)
 		}
 
-		ok(t, v.Destroy(false, false))
+		ok(t, v.Destroy(zfs.DESTROY_DEFAULT))
 	})
 }
 
@@ -171,9 +171,9 @@ func TestSnapshot(t *testing.T) {
 
 		equals(t, "test/snapshot-test@test", s.Name)
 
-		ok(t, s.Destroy(false, false))
+		ok(t, s.Destroy(zfs.DESTROY_DEFAULT))
 
-		ok(t, f.Destroy(false, false))
+		ok(t, f.Destroy(zfs.DESTROY_DEFAULT))
 	})
 }
 
@@ -200,11 +200,11 @@ func TestClone(t *testing.T) {
 
 		equals(t, zfs.DatasetFilesystem, c.Type)
 
-		ok(t, c.Destroy(false, false))
+		ok(t, c.Destroy(zfs.DESTROY_DEFAULT))
 
-		ok(t, s.Destroy(false, false))
+		ok(t, s.Destroy(zfs.DESTROY_DEFAULT))
 
-		ok(t, f.Destroy(false, false))
+		ok(t, f.Destroy(zfs.DESTROY_DEFAULT))
 	})
 }
 
@@ -232,9 +232,9 @@ func TestSendSnapshot(t *testing.T) {
 		err = s.SendSnapshot(file)
 		ok(t, err)
 
-		ok(t, s.Destroy(false, false))
+		ok(t, s.Destroy(zfs.DESTROY_DEFAULT))
 
-		ok(t, f.Destroy(false, false))
+		ok(t, f.Destroy(zfs.DESTROY_DEFAULT))
 	})
 }
 
@@ -255,8 +255,8 @@ func TestChildren(t *testing.T) {
 		equals(t, 1, len(children))
 		equals(t, "test/snapshot-test@test", children[0].Name)
 
-		ok(t, s.Destroy(false, false))
-		ok(t, f.Destroy(false, false))
+		ok(t, s.Destroy(zfs.DESTROY_DEFAULT))
+		ok(t, f.Destroy(zfs.DESTROY_DEFAULT))
 	})
 }
 
@@ -297,9 +297,9 @@ func TestRollback(t *testing.T) {
 		err = s1.Rollback(true)
 		ok(t, err)
 
-		ok(t, s1.Destroy(false, false))
+		ok(t, s1.Destroy(zfs.DESTROY_DEFAULT))
 
-		ok(t, f.Destroy(false, false))
+		ok(t, f.Destroy(zfs.DESTROY_DEFAULT))
 	})
 }
 
@@ -339,7 +339,7 @@ func TestDiff(t *testing.T) {
 
 		ok(t, movedFile.Close())
 		ok(t, unicodeFile.Close())
-		ok(t, snapshot.Destroy(false, false))
-		ok(t, fs.Destroy(false, false))
+		ok(t, snapshot.Destroy(zfs.DESTROY_DEFAULT))
+		ok(t, fs.Destroy(zfs.DESTROY_DEFAULT))
 	})
 }

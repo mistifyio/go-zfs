@@ -62,6 +62,15 @@ const (
 	RENAMED
 )
 
+type DestroyFlag int
+const (
+	DESTROY_DEFAULT DestroyFlag = 1 << iota
+	DESTROY_RECURSIVE           = 1 << iota
+	DESTROY_RECURSIVE_CLONES    = 1 << iota
+	DESTROY_DEFER_DELETION      = 1 << iota
+	DESTROY_FORCE               = 1 << iota
+)
+
 type InodeChange struct {
 	Change  ChangeType
 	Type    InodeType
@@ -198,17 +207,22 @@ func CreateVolume(name string, size uint64, properties map[string]string) (*Data
 	return GetDataset(name)
 }
 
-// Destroy destroys a ZFS dataset.  If the destroy parameter is set to true, any
+// Destroy destroys a ZFS dataset. If the destroy bit flag is set, any
 // descendents of the dataset will be recursively destroyed, including snapshots.
-// If the deferred parameter is set to true, the snapshot is marked for deferred
+// If the deferred bit flag is set, the snapshot is marked for deferred
 // deletion.
-func (d *Dataset) Destroy(recursive, deferred bool) error {
+func (d *Dataset) Destroy(flags DestroyFlag) error {
 	args := make([]string, 1, 3)
 	args[0] = "destroy"
-	if recursive {
+	if flags & DESTROY_RECURSIVE != 0 {
 		args = append(args, "-r")
 	}
-	if deferred {
+
+	if flags & DESTROY_RECURSIVE_CLONES != 0 {
+		args = append(args, "-R")
+	}
+
+	if flags & DESTROY_DEFER_DELETION != 0 {
 		args = append(args, "-d")
 	}
 	args = append(args, d.Name)
