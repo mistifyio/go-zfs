@@ -41,34 +41,34 @@ type InodeType int
 
 const (
 	_                      = iota // 0 == unknown type
-	BLOCK_DEVICE InodeType = iota
-	CHARACTER_DEVICE
-	DIRECTORY
-	DOOR
-	NAMED_PIPE
-	SYMBOLIC_LINK
-	EVENT_PORT
-	SOCKET
-	FILE
+	BlockDevice InodeType = iota
+	CharacterDevice
+	Directory
+	Door
+	NamedPipe
+	SymbolicLink
+	EventPort
+	Socket
+	File
 )
 
 type ChangeType int
 
 const (
 	_                  = iota // 0 == unknown type
-	REMOVED ChangeType = iota
-	CREATED
-	MODIFIED
-	RENAMED
+	Removed ChangeType = iota
+	Created
+	Modified
+	Renamed
 )
 
 type DestroyFlag int
 const (
-	DESTROY_DEFAULT DestroyFlag = 1 << iota
-	DESTROY_RECURSIVE           = 1 << iota
-	DESTROY_RECURSIVE_CLONES    = 1 << iota
-	DESTROY_DEFER_DELETION      = 1 << iota
-	DESTROY_FORCE               = 1 << iota
+	DestroyDefault DestroyFlag = 1 << iota
+	DestroyRecursive           = 1 << iota
+	DestroyRecursiveClones     = 1 << iota
+	DestroyDeferDeletion       = 1 << iota
+	DestroyForceUmount         = 1 << iota
 )
 
 type InodeChange struct {
@@ -214,17 +214,22 @@ func CreateVolume(name string, size uint64, properties map[string]string) (*Data
 func (d *Dataset) Destroy(flags DestroyFlag) error {
 	args := make([]string, 1, 3)
 	args[0] = "destroy"
-	if flags & DESTROY_RECURSIVE != 0 {
+	if flags & DestroyRecursive != 0 {
 		args = append(args, "-r")
 	}
 
-	if flags & DESTROY_RECURSIVE_CLONES != 0 {
+	if flags & DestroyRecursiveClones != 0 {
 		args = append(args, "-R")
 	}
 
-	if flags & DESTROY_DEFER_DELETION != 0 {
+	if flags & DestroyDeferDeletion != 0 {
 		args = append(args, "-d")
 	}
+
+	if flags & DestroyForceUmount != 0 {
+		args = append(args, "-f")
+	}
+
 	args = append(args, d.Name)
 	_, err := zfs(args...)
 	return err

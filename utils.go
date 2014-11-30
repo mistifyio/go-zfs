@@ -152,21 +152,21 @@ func unescapeFilepath(path string) (string, error) {
 }
 
 var changeTypeMap = map[string]ChangeType{
-	"-": REMOVED,
-	"+": CREATED,
-	"M": MODIFIED,
-	"R": RENAMED,
+	"-": Removed,
+	"+": Created,
+	"M": Modified,
+	"R": Renamed,
 }
 var inodeTypeMap = map[string]InodeType{
-	"B": BLOCK_DEVICE,
-	"C": CHARACTER_DEVICE,
-	"/": DIRECTORY,
-	">": DOOR,
-	"|": NAMED_PIPE,
-	"@": SYMBOLIC_LINK,
-	"P": EVENT_PORT,
-	"=": SOCKET,
-	"F": FILE,
+	"B": BlockDevice,
+	"C": CharacterDevice,
+	"/": Directory,
+	">": Door,
+	"|": NamedPipe,
+	"@": SymbolicLink,
+	"P": EventPort,
+	"=": Socket,
+	"F": File,
 }
 
 func parseInodeChange(line []string) (*InodeChange, error) {
@@ -179,7 +179,7 @@ func parseInodeChange(line []string) (*InodeChange, error) {
 	if changeType == 0 {
 		return nil, fmt.Errorf("Unknown change type '%s'", line[0])
 	}
-	if changeType == RENAMED {
+	if changeType == Renamed {
 		if llen != 4 {
 			return nil, fmt.Errorf("Mismatching number of fields: expect 4, got: %d", llen)
 		}
@@ -198,7 +198,7 @@ func parseInodeChange(line []string) (*InodeChange, error) {
 	}
 
 	var newPath string
-	if changeType == RENAMED {
+	if changeType == Renamed {
 		newPath, err = unescapeFilepath(line[3])
 		if err != nil {
 			return nil, fmt.Errorf("Failed to parse filename: %v", err)
