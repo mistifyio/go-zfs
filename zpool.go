@@ -1,7 +1,15 @@
 package zfs
 
-import (
-	"strings"
+// ZFS zpool states, which can indicate if a pool is online, offline,
+// degraded, etc.  More information regarding zpool states can be found here:
+// https://docs.oracle.com/cd/E19253-01/819-5461/gamno/index.html.
+const (
+	ZpoolOnline   = "ONLINE"
+	ZpoolDegraded = "DEGRADED"
+	ZpoolFaulted  = "FAULTED"
+	ZpoolOffline  = "OFFLINE"
+	ZpoolUnavail  = "UNAVAIL"
+	ZpoolRemoved  = "REMOVED"
 )
 
 // Zpool is a ZFS zpool.  A pool is a top-level structure in ZFS, and can
@@ -22,12 +30,22 @@ func zpool(arg ...string) ([][]string, error) {
 
 // GetZpool retrieves a single ZFS zpool by name.
 func GetZpool(name string) (*Zpool, error) {
-	out, err := zpool("list", "-Ho", strings.Join(zpoolPropertyFields, ","), name)
+	out, err := zpool("get", "all", "-p", name)
 	if err != nil {
 		return nil, err
 	}
 
-	return parseZpoolLine(out[0])
+	// there is no -H
+	out = out[1:]
+
+	z := &Zpool{Name: name}
+	for _, line := range out {
+		if err := z.parseLine(line); err != nil {
+			return nil, err
+		}
+	}
+
+	return z, nil
 }
 
 // Datasets returns a slice of all ZFS datasets in a zpool.
@@ -68,9 +86,23 @@ func (z *Zpool) Destroy() error {
 
 // ListZpools list all ZFS zpools accessible on the current system.
 func ListZpools() ([]*Zpool, error) {
-	out, err := zpool("list", "-Ho", strings.Join(zpoolPropertyFields, ","))
+	args := []string{"list", "-Ho", "name"}
+	out, err := zpool(args...)
 	if err != nil {
 		return nil, err
 	}
-	return parseZpoolLines(out)
+
+	// there is no -H
+	out = out[1:]
+
+	var pools []*Zpool
+
+	for _, line := range out {
+		z, err := GetZpool(line[0])
+		if err != nil {
+			return nil, err
+		}
+		pools = append(pools, z)
+	}
+	return pools, nil
 }

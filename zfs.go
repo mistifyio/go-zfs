@@ -9,6 +9,14 @@ import (
 	"strings"
 )
 
+// ZFS dataset types, which can indicate if a dataset is a filesystem,
+// snapshot, or volume.
+const (
+	DatasetFilesystem = "filesystem"
+	DatasetSnapshot   = "snapshot"
+	DatasetVolume     = "volume"
+)
+
 // Dataset is a ZFS dataset.  A dataset could be a clone, filesystem, snapshot,
 // or volume.  The Type struct member can be used to determine a dataset's type.
 //
@@ -16,6 +24,7 @@ import (
 // http://www.freebsd.org/cgi/man.cgi?zfs(8).
 type Dataset struct {
 	Name          string
+	Origin        string
 	Used          uint64
 	Avail         uint64
 	Mountpoint    string
@@ -24,7 +33,61 @@ type Dataset struct {
 	Written       uint64
 	Volsize       uint64
 	Usedbydataset uint64
+	Logicalused   uint64
 	Quota         uint64
+}
+
+type InodeType int
+
+const (
+	_                      = iota // 0 == unknown type
+	BlockDevice InodeType = iota
+	CharacterDevice
+	Directory
+	Door
+	NamedPipe
+	SymbolicLink
+	EventPort
+	Socket
+	File
+)
+
+type ChangeType int
+
+const (
+	_                  = iota // 0 == unknown type
+	Removed ChangeType = iota
+	Created
+	Modified
+	Renamed
+)
+
+type DestroyFlag int
+const (
+	DestroyDefault DestroyFlag = 1 << iota
+	DestroyRecursive           = 1 << iota
+	DestroyRecursiveClones     = 1 << iota
+	DestroyDeferDeletion       = 1 << iota
+	DestroyForceUmount         = 1 << iota
+)
+
+type InodeChange struct {
+	Change  ChangeType
+	Type    InodeType
+	Path    string
+	NewPath string
+}
+
+type Logger interface {
+	Log(cmd []string)
+}
+
+var logger Logger
+
+// SetLogger set a log handler to log all commands including arguments before
+// they are executed
+func SetLogger(l Logger) {
+	logger = l
 }
 
 // zfs is a helper function to wrap typical calls to zfs.
@@ -44,37 +107,45 @@ func Datasets(filter string) ([]*Dataset, error) {
 // A filter argument may be passed to select a snapshot with the matching name,
 // or empty string ("") may be used to select all snapshots.
 func Snapshots(filter string) ([]*Dataset, error) {
-	return listByType("snapshot", filter)
+	return listByType(DatasetSnapshot, filter)
 }
 
 // Filesystems returns a slice of ZFS filesystems.
 // A filter argument may be passed to select a filesystem with the matching name,
 // or empty string ("") may be used to select all filesystems.
 func Filesystems(filter string) ([]*Dataset, error) {
-	return listByType("filesystem", filter)
+	return listByType(DatasetFilesystem, filter)
 }
 
 // Volumes returns a slice of ZFS volumes.
 // A filter argument may be passed to select a volume with the matching name,
 // or empty string ("") may be used to select all volumes.
 func Volumes(filter string) ([]*Dataset, error) {
-	return listByType("volume", filter)
+	return listByType(DatasetVolume, filter)
 }
 
 // GetDataset retrieves a single ZFS dataset by name.  This dataset could be
 // any valid ZFS dataset type, such as a clone, filesystem, snapshot, or volume.
 func GetDataset(name string) (*Dataset, error) {
-	out, err := zfs("list", "-Hpo", strings.Join(propertyFields, ","), name)
+	out, err := zfs("get", "all", "-Hp", name)
 	if err != nil {
 		return nil, err
 	}
-	return parseDatasetLine(out[0])
+
+	ds := &Dataset{Name: name}
+	for _, line := range out {
+		if err := ds.parseLine(line); err != nil {
+			return nil, err
+		}
+	}
+
+	return ds, nil
 }
 
 // Clone clones a ZFS snapshot and returns a clone dataset.
 // An error will be returned if the input dataset is not of snapshot type.
 func (d *Dataset) Clone(dest string, properties map[string]string) (*Dataset, error) {
-	if d.Type != "snapshot" {
+	if d.Type != DatasetSnapshot {
 		return nil, errors.New("can only clone snapshots")
 	}
 	args := make([]string, 2, 4)
@@ -106,7 +177,7 @@ func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error) {
 // SendSnapshot sends a ZFS stream of a snapshot to the input io.Writer.
 // An error will be returned if the input dataset is not of snapshot type.
 func (d *Dataset) SendSnapshot(output io.Writer) error {
-	if d.Type != "snapshot" {
+	if d.Type != DatasetSnapshot {
 		return errors.New("can only send snapshots")
 	}
 
@@ -136,14 +207,29 @@ func CreateVolume(name string, size uint64, properties map[string]string) (*Data
 	return GetDataset(name)
 }
 
-// Destroy destroys a ZFS dataset.  If the input parameter is set to true, any
+// Destroy destroys a ZFS dataset. If the destroy bit flag is set, any
 // descendents of the dataset will be recursively destroyed, including snapshots.
-func (d *Dataset) Destroy(recursive bool) error {
+// If the deferred bit flag is set, the snapshot is marked for deferred
+// deletion.
+func (d *Dataset) Destroy(flags DestroyFlag) error {
 	args := make([]string, 1, 3)
 	args[0] = "destroy"
-	if recursive {
+	if flags & DestroyRecursive != 0 {
 		args = append(args, "-r")
 	}
+
+	if flags & DestroyRecursiveClones != 0 {
+		args = append(args, "-R")
+	}
+
+	if flags & DestroyDeferDeletion != 0 {
+		args = append(args, "-d")
+	}
+
+	if flags & DestroyForceUmount != 0 {
+		args = append(args, "-f")
+	}
+
 	args = append(args, d.Name)
 	_, err := zfs(args...)
 	return err
@@ -220,7 +306,7 @@ func (d *Dataset) Snapshot(name string, recursive bool) (*Dataset, error) {
 // snapshots exist.
 // An error will be returned if the input dataset is not of snapshot type.
 func (d *Dataset) Rollback(destroyMoreRecent bool) error {
-	if d.Type != "snapshot" {
+	if d.Type != DatasetSnapshot {
 		errors.New("can only rollback snapshots")
 	}
 
@@ -239,10 +325,12 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 // A recursion depth may be specified, or a depth of 0 allows unlimited
 // recursion.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
-	args := []string{"list", "-t", "all", "-rHpo", strings.Join(propertyFields, ",")}[:]
+	args := []string{"get", "all", "-t", "all", "-Hp"}
 	if depth > 0 {
 		args = append(args, "-d")
 		args = append(args, strconv.FormatUint(depth, 10))
+	} else {
+		args = append(args, "-r")
 	}
 	args = append(args, d.Name)
 
@@ -250,10 +338,35 @@ func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 	if err != nil {
 		return nil, err
 	}
-	datasets, err := parseDatasetLines(out)
+
+	var datasets []*Dataset
+	name := ""
+	var ds *Dataset
+	for _, line := range out {
+		if name != line[0] {
+			name = line[0]
+			ds = &Dataset{Name: name}
+			datasets = append(datasets, ds)
+		}
+		if err := ds.parseLine(line); err != nil {
+			return nil, err
+		}
+	}
+	return datasets[1:], nil
+}
+
+// Diff returns changes between a snapshot and the given ZFS dataset.
+// The snapshot name must include the filesystem part as it is possible to
+// compare clones with their origin snapshots.
+func (d *Dataset) Diff(snapshot string) ([]*InodeChange, error) {
+	args := []string{"diff", "-FH", snapshot, d.Name}[:]
+	out, err := zfs(args...)
 	if err != nil {
 		return nil, err
 	}
-	// first element is the dataset itself
-	return datasets[1:len(datasets)], nil
+	inodeChanges, err := parseInodeChanges(out)
+	if err != nil {
+		return nil, err
+	}
+	return inodeChanges, nil
 }
