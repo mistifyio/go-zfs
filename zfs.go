@@ -37,10 +37,12 @@ type Dataset struct {
 	Quota         uint64
 }
 
+// InodeType is the type of inode as reported by Diff
 type InodeType int
 
+// Types of Inodes
 const (
-	_                      = iota // 0 == unknown type
+	_                     = iota // 0 == unknown type
 	BlockDevice InodeType = iota
 	CharacterDevice
 	Directory
@@ -52,8 +54,10 @@ const (
 	File
 )
 
+// ChangeType is the type of inode change as reported by Diff
 type ChangeType int
 
+// Types of Changes
 const (
 	_                  = iota // 0 == unknown type
 	Removed ChangeType = iota
@@ -62,15 +66,19 @@ const (
 	Renamed
 )
 
+// DestroyFlag is the options flag passed to Destroy
 type DestroyFlag int
+
+// Valid destroy options
 const (
-	DestroyDefault DestroyFlag = 1 << iota
-	DestroyRecursive           = 1 << iota
-	DestroyRecursiveClones     = 1 << iota
-	DestroyDeferDeletion       = 1 << iota
-	DestroyForceUmount         = 1 << iota
+	DestroyDefault         DestroyFlag = 1 << iota
+	DestroyRecursive                   = 1 << iota
+	DestroyRecursiveClones             = 1 << iota
+	DestroyDeferDeletion               = 1 << iota
+	DestroyForceUmount                 = 1 << iota
 )
 
+// InodeChange represents a change as reported by Diff
 type InodeChange struct {
 	Change  ChangeType
 	Type    InodeType
@@ -78,6 +86,7 @@ type InodeChange struct {
 	NewPath string
 }
 
+// Logger can be used to log commands/actions
 type Logger interface {
 	Log(cmd []string)
 }
@@ -214,19 +223,19 @@ func CreateVolume(name string, size uint64, properties map[string]string) (*Data
 func (d *Dataset) Destroy(flags DestroyFlag) error {
 	args := make([]string, 1, 3)
 	args[0] = "destroy"
-	if flags & DestroyRecursive != 0 {
+	if flags&DestroyRecursive != 0 {
 		args = append(args, "-r")
 	}
 
-	if flags & DestroyRecursiveClones != 0 {
+	if flags&DestroyRecursiveClones != 0 {
 		args = append(args, "-R")
 	}
 
-	if flags & DestroyDeferDeletion != 0 {
+	if flags&DestroyDeferDeletion != 0 {
 		args = append(args, "-d")
 	}
 
-	if flags & DestroyForceUmount != 0 {
+	if flags&DestroyForceUmount != 0 {
 		args = append(args, "-f")
 	}
 
