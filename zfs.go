@@ -24,6 +24,7 @@ const (
 // http://www.freebsd.org/cgi/man.cgi?zfs(8).
 type Dataset struct {
 	Name          string
+	Origin        string
 	Used          uint64
 	Avail         uint64
 	Mountpoint    string
@@ -32,7 +33,61 @@ type Dataset struct {
 	Written       uint64
 	Volsize       uint64
 	Usedbydataset uint64
+	Logicalused   uint64
 	Quota         uint64
+}
+
+type InodeType int
+
+const (
+	_                      = iota // 0 == unknown type
+	BlockDevice InodeType = iota
+	CharacterDevice
+	Directory
+	Door
+	NamedPipe
+	SymbolicLink
+	EventPort
+	Socket
+	File
+)
+
+type ChangeType int
+
+const (
+	_                  = iota // 0 == unknown type
+	Removed ChangeType = iota
+	Created
+	Modified
+	Renamed
+)
+
+type DestroyFlag int
+const (
+	DestroyDefault DestroyFlag = 1 << iota
+	DestroyRecursive           = 1 << iota
+	DestroyRecursiveClones     = 1 << iota
+	DestroyDeferDeletion       = 1 << iota
+	DestroyForceUmount         = 1 << iota
+)
+
+type InodeChange struct {
+	Change  ChangeType
+	Type    InodeType
+	Path    string
+	NewPath string
+}
+
+type Logger interface {
+	Log(cmd []string)
+}
+
+var logger Logger
+
+// SetLogger set a log handler to log all commands including arguments before
+// they are executed
+func SetLogger(l Logger) {
+	logger = l
 }
 
 // zfs is a helper function to wrap typical calls to zfs.
@@ -152,14 +207,29 @@ func CreateVolume(name string, size uint64, properties map[string]string) (*Data
 	return GetDataset(name)
 }
 
-// Destroy destroys a ZFS dataset.  If the input parameter is set to true, any
+// Destroy destroys a ZFS dataset. If the destroy bit flag is set, any
 // descendents of the dataset will be recursively destroyed, including snapshots.
-func (d *Dataset) Destroy(recursive bool) error {
+// If the deferred bit flag is set, the snapshot is marked for deferred
+// deletion.
+func (d *Dataset) Destroy(flags DestroyFlag) error {
 	args := make([]string, 1, 3)
 	args[0] = "destroy"
-	if recursive {
+	if flags & DestroyRecursive != 0 {
 		args = append(args, "-r")
 	}
+
+	if flags & DestroyRecursiveClones != 0 {
+		args = append(args, "-R")
+	}
+
+	if flags & DestroyDeferDeletion != 0 {
+		args = append(args, "-d")
+	}
+
+	if flags & DestroyForceUmount != 0 {
+		args = append(args, "-f")
+	}
+
 	args = append(args, d.Name)
 	_, err := zfs(args...)
 	return err
@@ -282,6 +352,21 @@ func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 			return nil, err
 		}
 	}
+	return datasets[1:], nil
+}
 
-	return datasets[1:len(datasets)], nil
+// Diff returns changes between a snapshot and the given ZFS dataset.
+// The snapshot name must include the filesystem part as it is possible to
+// compare clones with their origin snapshots.
+func (d *Dataset) Diff(snapshot string) ([]*InodeChange, error) {
+	args := []string{"diff", "-FH", snapshot, d.Name}[:]
+	out, err := zfs(args...)
+	if err != nil {
+		return nil, err
+	}
+	inodeChanges, err := parseInodeChanges(out)
+	if err != nil {
+		return nil, err
+	}
+	return inodeChanges, nil
 }
