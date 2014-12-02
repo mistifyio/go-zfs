@@ -316,7 +316,7 @@ func (d *Dataset) Snapshot(name string, recursive bool) (*Dataset, error) {
 // An error will be returned if the input dataset is not of snapshot type.
 func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 	if d.Type != DatasetSnapshot {
-		errors.New("can only rollback snapshots")
+		return errors.New("can only rollback snapshots")
 	}
 
 	args := make([]string, 1, 3)
