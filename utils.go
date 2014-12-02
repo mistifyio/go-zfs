@@ -4,12 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"math"
 	"os/exec"
-	"reflect"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
 type command struct {
@@ -37,6 +34,9 @@ func (c *command) Run(arg ...string) ([][]string, error) {
 	cmd.Stderr = &stderr
 
 	debug := strings.Join([]string{cmd.Path, strings.Join(cmd.Args, " ")}, " ")
+	if logger != nil {
+		logger.Log(cmd.Args)
+	}
 	err := cmd.Run()
 
 	if err != nil {
@@ -59,92 +59,175 @@ func (c *command) Run(arg ...string) ([][]string, error) {
 	output := make([][]string, len(lines))
 
 	for i, l := range lines {
-		output[i] = strings.Split(l, "\t")
+		output[i] = strings.Fields(l)
 	}
 
 	return output, nil
 }
 
-var propertyFields = make([]string, 0, 66)
-var propertyMap = map[string]string{}
-
-var zpoolPropertyFields = make([]string, 0, 66)
-var zpoolPropertyMap = map[string]string{}
-
-func init() {
-	st := reflect.TypeOf(Dataset{})
-	for i := 0; i < st.NumField(); i++ {
-		f := st.Field(i)
-		// only look at exported values
-		if f.PkgPath == "" {
-			key := strings.ToLower(f.Name)
-			propertyMap[key] = f.Name
-			propertyFields = append(propertyFields, key)
-		}
+func setString(field *string, value string) {
+	v := ""
+	if value != "-" {
+		v = value
 	}
-
-	st = reflect.TypeOf(Zpool{})
-	for i := 0; i < st.NumField(); i++ {
-		f := st.Field(i)
-		// only look at exported values
-		if f.PkgPath == "" {
-			key := strings.ToLower(f.Name)
-			zpoolPropertyMap[key] = f.Name
-			zpoolPropertyFields = append(zpoolPropertyFields, key)
-		}
-	}
+	*field = v
 }
 
-func parseDatasetLine(line []string) (*Dataset, error) {
-	dataset := Dataset{}
-
-	st := reflect.ValueOf(&dataset).Elem()
-
-	for j, field := range propertyFields {
-
-		fieldName := propertyMap[field]
-
-		if fieldName == "" {
-			continue
-		}
-
-		f := st.FieldByName(fieldName)
-		value := line[j]
-
-		switch f.Kind() {
-
-		case reflect.Uint64:
-			var v uint64
-			if value != "-" {
-				v, _ = strconv.ParseUint(value, 10, 64)
-			}
-			f.SetUint(v)
-
-		case reflect.String:
-			v := ""
-			if value != "-" {
-				v = value
-			}
-			f.SetString(v)
-
+func setUint(field *uint64, value string) error {
+	var v uint64
+	if value != "-" {
+		var err error
+		v, err = strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return err
 		}
 	}
-	return &dataset, nil
+	*field = v
+	return nil
 }
 
-func parseDatasetLines(lines [][]string) ([]*Dataset, error) {
-	datasets := make([]*Dataset, len(lines))
+func (ds *Dataset) parseLine(line []string) error {
+	prop := line[1]
+	val := line[2]
+
+	var err error
+
+	switch prop {
+	case "available":
+		err = setUint(&ds.Avail, val)
+	case "compression":
+		setString(&ds.Compression, val)
+	case "mountpoint":
+		setString(&ds.Mountpoint, val)
+	case "quota":
+		err = setUint(&ds.Quota, val)
+	case "type":
+		setString(&ds.Type, val)
+	case "origin":
+		setString(&ds.Origin, val)
+	case "used":
+		err = setUint(&ds.Used, val)
+	case "volsize":
+		err = setUint(&ds.Volsize, val)
+	case "written":
+		err = setUint(&ds.Written, val)
+	case "logicalused":
+		err = setUint(&ds.Logicalused, val)
+	}
+	return err
+}
+
+/*
+ * from zfs diff`s escape function:
+ *
+ * Prints a file name out a character at a time.  If the character is
+ * not in the range of what we consider "printable" ASCII, display it
+ * as an escaped 3-digit octal value.  ASCII values less than a space
+ * are all control characters and we declare the upper end as the
+ * DELete character.  This also is the last 7-bit ASCII character.
+ * We choose to treat all 8-bit ASCII as not printable for this
+ * application.
+ */
+func unescapeFilepath(path string) (string, error) {
+	buf := make([]byte, 0, len(path))
+	llen := len(path)
+	for i := 0; i < llen; {
+		if path[i] == '\\' {
+			if llen < i+4 {
+				return "", fmt.Errorf("Invalid octal code: too short")
+			}
+			octalCode := path[(i + 1):(i + 4)]
+			val, err := strconv.ParseUint(octalCode, 8, 8)
+			if err != nil {
+				return "", fmt.Errorf("Invalid octal code: %v", err)
+			}
+			buf = append(buf, byte(val))
+			i += 4
+		} else {
+			buf = append(buf, path[i])
+			i++
+		}
+	}
+	return string(buf), nil
+}
+
+var changeTypeMap = map[string]ChangeType{
+	"-": Removed,
+	"+": Created,
+	"M": Modified,
+	"R": Renamed,
+}
+var inodeTypeMap = map[string]InodeType{
+	"B": BlockDevice,
+	"C": CharacterDevice,
+	"/": Directory,
+	">": Door,
+	"|": NamedPipe,
+	"@": SymbolicLink,
+	"P": EventPort,
+	"=": Socket,
+	"F": File,
+}
+
+func parseInodeChange(line []string) (*InodeChange, error) {
+	llen := len(line)
+	if llen < 1 {
+		return nil, fmt.Errorf("Empty line passed")
+	}
+
+	changeType := changeTypeMap[line[0]]
+	if changeType == 0 {
+		return nil, fmt.Errorf("Unknown change type '%s'", line[0])
+	}
+	if changeType == Renamed {
+		if llen != 4 {
+			return nil, fmt.Errorf("Mismatching number of fields: expect 4, got: %d", llen)
+		}
+	} else if llen != 3 {
+		return nil, fmt.Errorf("Mismatching number of fields: expect 3, got: %d", llen)
+	}
+
+	inodeType := inodeTypeMap[line[1]]
+	if inodeType == 0 {
+		return nil, fmt.Errorf("Unknown inode type '%s'", line[1])
+	}
+
+	path, err := unescapeFilepath(line[2])
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse filename: %v", err)
+	}
+
+	var newPath string
+	if changeType == Renamed {
+		newPath, err = unescapeFilepath(line[3])
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse filename: %v", err)
+		}
+	} else {
+		newPath = ""
+	}
+
+	return &InodeChange{changeType, inodeType, path, newPath}, nil
+}
+
+// example input
+//M       /       /testpool/bar/
+//+       F       /testpool/bar/hello.txt
+func parseInodeChanges(lines [][]string) ([]*InodeChange, error) {
+	changes := make([]*InodeChange, len(lines))
 
 	for i, line := range lines {
-		d, _ := parseDatasetLine(line)
-		datasets[i] = d
+		c, err := parseInodeChange(line)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse line %d of zfs diff: %v, got: '%s'", i, err, line)
+		}
+		changes[i] = c
 	}
-
-	return datasets, nil
+	return changes, nil
 }
 
 func listByType(t, filter string) ([]*Dataset, error) {
-	args := []string{"list", "-t", t, "-rHpo", strings.Join(propertyFields, ",")}[:]
+	args := []string{"get", "all", "-t", t, "-rHp"}
 	if filter != "" {
 		args = append(args, filter)
 	}
@@ -152,7 +235,23 @@ func listByType(t, filter string) ([]*Dataset, error) {
 	if err != nil {
 		return nil, err
 	}
-	return parseDatasetLines(out)
+
+	var datasets []*Dataset
+
+	name := ""
+	var ds *Dataset
+	for _, line := range out {
+		if name != line[0] {
+			name = line[0]
+			ds = &Dataset{Name: name}
+			datasets = append(datasets, ds)
+		}
+		if err := ds.parseLine(line); err != nil {
+			return nil, err
+		}
+	}
+
+	return datasets, nil
 }
 
 func propsSlice(properties map[string]string) []string {
@@ -164,98 +263,21 @@ func propsSlice(properties map[string]string) []string {
 	return args
 }
 
-// based on https://github.com/dustin/go-humanize/blob/master/bytes.go
-const (
-	Byte  = 1
-	KByte = Byte * 1024
-	MByte = KByte * 1024
-	GByte = MByte * 1024
-	TByte = GByte * 1024
-	PByte = TByte * 1024
-	EByte = PByte * 1024
-)
+func (z *Zpool) parseLine(line []string) error {
+	prop := line[1]
+	val := line[2]
 
-var bytesSizeTable = map[string]uint64{
-	"b": Byte,
-	"k": KByte,
-	"m": MByte,
-	"g": GByte,
-	"t": TByte,
-	"p": PByte,
-	"e": EByte,
-}
+	var err error
 
-func parseBytes(s string) (uint64, error) {
-	lastDigit := 0
-	for _, r := range s {
-		if !(unicode.IsDigit(r) || r == '.') {
-			break
-		}
-		lastDigit++
+	switch prop {
+	case "health":
+		setString(&z.Health, val)
+	case "allocated":
+		err = setUint(&z.Allocated, val)
+	case "size":
+		err = setUint(&z.Size, val)
+	case "free":
+		err = setUint(&z.Free, val)
 	}
-
-	f, err := strconv.ParseFloat(s[:lastDigit], 64)
-	if err != nil {
-		return 0, err
-	}
-
-	extra := strings.ToLower(strings.TrimSpace(s[lastDigit:]))
-	if m, ok := bytesSizeTable[extra]; ok {
-		f *= float64(m)
-		if f >= math.MaxUint64 {
-			return 0, fmt.Errorf("too large: %v", s)
-		}
-		return uint64(f), nil
-	}
-
-	return 0, fmt.Errorf("unhandled size name: %v", extra)
-}
-
-func parseZpoolLine(line []string) (*Zpool, error) {
-	pool := Zpool{}
-
-	st := reflect.ValueOf(&pool).Elem()
-
-	for j, field := range zpoolPropertyFields {
-
-		fieldName := zpoolPropertyMap[field]
-
-		if fieldName == "" {
-			continue
-		}
-
-		f := st.FieldByName(fieldName)
-		value := line[j]
-
-		switch f.Kind() {
-
-		//sizes in zpool are apparently only availible in "human readable" form
-		case reflect.Uint64:
-			var v uint64
-			if value != "-" {
-				v, _ = parseBytes(value)
-			}
-			f.SetUint(v)
-
-		case reflect.String:
-			v := ""
-			if value != "-" {
-				v = value
-			}
-			f.SetString(v)
-
-		}
-	}
-	return &pool, nil
-}
-
-func parseZpoolLines(lines [][]string) ([]*Zpool, error) {
-	pools := make([]*Zpool, len(lines))
-
-	for i, line := range lines {
-		p, _ := parseZpoolLine(line)
-		pools[i] = p
-	}
-
-	return pools, nil
+	return err
 }
