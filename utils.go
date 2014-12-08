@@ -237,11 +237,11 @@ func parseInodeChange(line []string) (*InodeChange, error) {
 	}
 
 	return &InodeChange{
-		changeType,
-		inodeType,
-		path,
-		newPath,
-		referenceCount,
+		Change:               changeType,
+		Type:                 inodeType,
+		Path:                 path,
+		NewPath:              newPath,
+		ReferenceCountChange: referenceCount,
 	}, nil
 }
 
