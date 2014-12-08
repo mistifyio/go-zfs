@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -169,6 +170,17 @@ var inodeTypeMap = map[string]InodeType{
 	"F": File,
 }
 
+// matches (+1) or (-1)
+var referenceCountRegex = regexp.MustCompile("\\(([+-]\\d+?)\\)")
+
+func parseReferenceCount(field string) (int, error) {
+	matches := referenceCountRegex.FindStringSubmatch(field)
+	if matches == nil {
+		return 0, fmt.Errorf("Regexp does not match")
+	}
+	return strconv.Atoi(matches[1])
+}
+
 func parseInodeChange(line []string) (*InodeChange, error) {
 	llen := len(line)
 	if llen < 1 {
@@ -179,12 +191,20 @@ func parseInodeChange(line []string) (*InodeChange, error) {
 	if changeType == 0 {
 		return nil, fmt.Errorf("Unknown change type '%s'", line[0])
 	}
-	if changeType == Renamed {
+
+	switch changeType {
+	case Renamed:
 		if llen != 4 {
 			return nil, fmt.Errorf("Mismatching number of fields: expect 4, got: %d", llen)
 		}
-	} else if llen != 3 {
-		return nil, fmt.Errorf("Mismatching number of fields: expect 3, got: %d", llen)
+	case Modified:
+		if llen != 4 && llen != 3 {
+			return nil, fmt.Errorf("Mismatching number of fields: expect 3..4, got: %d", llen)
+		}
+	default:
+		if llen != 3 {
+			return nil, fmt.Errorf("Mismatching number of fields: expect 3, got: %d", llen)
+		}
 	}
 
 	inodeType := inodeTypeMap[line[1]]
@@ -198,21 +218,38 @@ func parseInodeChange(line []string) (*InodeChange, error) {
 	}
 
 	var newPath string
-	if changeType == Renamed {
+	var referenceCount int
+	switch changeType {
+	case Renamed:
 		newPath, err = unescapeFilepath(line[3])
 		if err != nil {
 			return nil, fmt.Errorf("Failed to parse filename: %v", err)
 		}
-	} else {
+	case Modified:
+		if llen == 4 {
+			referenceCount, err = parseReferenceCount(line[3])
+			if err != nil {
+				return nil, fmt.Errorf("Failed to parse reference count: %v", err)
+			}
+		}
+	default:
 		newPath = ""
 	}
 
-	return &InodeChange{changeType, inodeType, path, newPath}, nil
+	return &InodeChange{
+		changeType,
+		inodeType,
+		path,
+		newPath,
+		referenceCount,
+	}, nil
 }
 
 // example input
 //M       /       /testpool/bar/
 //+       F       /testpool/bar/hello.txt
+//M       /       /testpool/bar/hello.txt (+1)
+//M       /       /testpool/bar/hello-hardlink
 func parseInodeChanges(lines [][]string) ([]*InodeChange, error) {
 	changes := make([]*InodeChange, len(lines))
 
