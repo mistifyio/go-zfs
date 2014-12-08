@@ -80,10 +80,11 @@ const (
 
 // InodeChange represents a change as reported by Diff
 type InodeChange struct {
-	Change  ChangeType
-	Type    InodeType
-	Path    string
-	NewPath string
+	Change               ChangeType
+	Type                 InodeType
+	Path                 string
+	NewPath              string
+	ReferenceCountChange int
 }
 
 // Logger can be used to log commands/actions

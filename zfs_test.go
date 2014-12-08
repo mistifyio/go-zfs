@@ -308,6 +308,9 @@ func TestDiff(t *testing.T) {
 		fs, err := zfs.CreateFilesystem("test/origin", nil)
 		ok(t, err)
 
+		linkedFile, err := os.Create(filepath.Join(fs.Mountpoint, "linked"))
+		ok(t, err)
+
 		movedFile, err := os.Create(filepath.Join(fs.Mountpoint, "file"))
 		ok(t, err)
 
@@ -320,26 +323,35 @@ func TestDiff(t *testing.T) {
 		err = os.Rename(movedFile.Name(), movedFile.Name()+"-new")
 		ok(t, err)
 
+		err = os.Link(linkedFile.Name(), linkedFile.Name()+"_hard")
+		ok(t, err)
+
 		inodeChanges, err := fs.Diff(snapshot.Name)
 		ok(t, err)
-		equals(t, 3, len(inodeChanges))
+		equals(t, 4, len(inodeChanges))
 
 		equals(t, "/test/origin/", inodeChanges[0].Path)
 		equals(t, zfs.Directory, inodeChanges[0].Type)
 		equals(t, zfs.Modified, inodeChanges[0].Change)
 
-		equals(t, "/test/origin/file", inodeChanges[1].Path)
-		equals(t, "/test/origin/file-new", inodeChanges[1].NewPath)
+		equals(t, "/test/origin/linked", inodeChanges[1].Path)
 		equals(t, zfs.File, inodeChanges[1].Type)
-		equals(t, zfs.Renamed, inodeChanges[1].Change)
+		equals(t, zfs.Modified, inodeChanges[1].Change)
+		equals(t, 1, inodeChanges[1].ReferenceCountChange)
 
-		equals(t, "/test/origin/i ❤ unicode", inodeChanges[2].Path)
+		equals(t, "/test/origin/file", inodeChanges[2].Path)
+		equals(t, "/test/origin/file-new", inodeChanges[2].NewPath)
 		equals(t, zfs.File, inodeChanges[2].Type)
-		equals(t, zfs.Created, inodeChanges[2].Change)
+		equals(t, zfs.Renamed, inodeChanges[2].Change)
+
+		equals(t, "/test/origin/i ❤ unicode", inodeChanges[3].Path)
+		equals(t, zfs.File, inodeChanges[3].Type)
+		equals(t, zfs.Created, inodeChanges[3].Change)
 
 		ok(t, movedFile.Close())
 		ok(t, unicodeFile.Close())
-		ok(t, snapshot.Destroy(zfs.DestroyDefault))
-		ok(t, fs.Destroy(zfs.DestroyDefault))
+		ok(t, linkedFile.Close())
+		ok(t, snapshot.Destroy(zfs.DestroyForceUmount))
+		ok(t, fs.Destroy(zfs.DestroyForceUmount))
 	})
 }
