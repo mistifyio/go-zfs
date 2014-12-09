@@ -54,6 +54,7 @@ For consistency and to catch minor issues for all of go code, please run the fol
 * golint
 * errcheck
 
-Many editors can run these on save.
+Many editors can execute the above on save.
+
 ----
 Guidelines based on http://azkaban.github.io/contributing.html
