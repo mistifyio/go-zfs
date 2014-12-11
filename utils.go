@@ -171,7 +171,7 @@ var inodeTypeMap = map[string]InodeType{
 }
 
 // matches (+1) or (-1)
-var referenceCountRegex = regexp.MustCompile("\\(([+-]\\d+?)\\)")
+var referenceCountRegex = regexp.MustCompile(`\(([+-]\d+?)\)`)
 
 func parseReferenceCount(field string) (int, error) {
 	matches := referenceCountRegex.FindStringSubmatch(field)
