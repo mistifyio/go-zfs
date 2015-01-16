@@ -262,8 +262,8 @@ func TestChildren(t *testing.T) {
 
 func TestListZpool(t *testing.T) {
 	zpoolTest(t, func() {
-		pools, err := zfs.ListZpools()
 		equals(t, "test", pools[0].Name)
+		pools, err := zfs.ListZpools()
 		ok(t, err)
 	})
 }
