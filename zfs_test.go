@@ -294,7 +294,7 @@ func TestRollback(t *testing.T) {
 		ok(t, err)
 
 		err = s1.Rollback(false)
-		assert(t, ok != nil, "should error when rolling back beyond most recent without destroyMoreRecent = true")
+		assert(t, err != nil, "should error when rolling back beyond most recent without destroyMoreRecent = true")
 
 		err = s1.Rollback(true)
 		ok(t, err)
