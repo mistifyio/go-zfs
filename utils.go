@@ -100,6 +100,8 @@ func (ds *Dataset) parseLine(line []string) error {
 		setString(&ds.Compression, val)
 	case "mountpoint":
 		setString(&ds.Mountpoint, val)
+	case "mounted":
+		ds.Mounted = val == "yes"
 	case "quota":
 		err = setUint(&ds.Quota, val)
 	case "type":
@@ -171,7 +173,7 @@ var inodeTypeMap = map[string]InodeType{
 }
 
 // matches (+1) or (-1)
-var referenceCountRegex = regexp.MustCompile("\\(([+-]\\d+?)\\)")
+var referenceCountRegex = regexp.MustCompile(`\(([+-]\d+?)\)`)
 
 func parseReferenceCount(field string) (int, error) {
 	matches := referenceCountRegex.FindStringSubmatch(field)
@@ -296,6 +298,21 @@ func propsSlice(properties map[string]string) []string {
 	for k, v := range properties {
 		args = append(args, "-o")
 		args = append(args, fmt.Sprintf("%s=%s", k, v))
+	}
+	return args
+}
+
+type flag struct {
+	enumValue int
+	name      string
+}
+
+func flagsSlice(flagField int, flagSet []flag) []string {
+	args := make([]string, 0, len(flagSet))
+	for _, flag := range flagSet {
+		if flagField&flag.enumValue != 0 {
+			args = append(args, flag.name)
+		}
 	}
 	return args
 }

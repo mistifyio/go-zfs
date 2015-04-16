@@ -28,6 +28,7 @@ type Dataset struct {
 	Used          uint64
 	Avail         uint64
 	Mountpoint    string
+	Mounted       bool
 	Compression   string
 	Type          string
 	Written       uint64
@@ -76,6 +77,24 @@ const (
 	DestroyRecursiveClones             = 1 << iota
 	DestroyDeferDeletion               = 1 << iota
 	DestroyForceUmount                 = 1 << iota
+)
+
+// UnmountFlag is the options flag passed to Unmount
+type UnmountFlag int
+
+// Valid unmount options
+const (
+	UnmountDefault UnmountFlag = 1 << iota
+	UnmountForce               = 1 << iota
+)
+
+// MountFlag is the options flag passed to Mount
+type MountFlag int
+
+// Valid mount options
+const (
+	MountDefault MountFlag = 1 << iota
+	MountOverlay           = 1 << iota
 )
 
 // InodeChange represents a change as reported by Diff
@@ -224,21 +243,13 @@ func CreateVolume(name string, size uint64, properties map[string]string) (*Data
 func (d *Dataset) Destroy(flags DestroyFlag) error {
 	args := make([]string, 1, 3)
 	args[0] = "destroy"
-	if flags&DestroyRecursive != 0 {
-		args = append(args, "-r")
-	}
 
-	if flags&DestroyRecursiveClones != 0 {
-		args = append(args, "-R")
-	}
-
-	if flags&DestroyDeferDeletion != 0 {
-		args = append(args, "-d")
-	}
-
-	if flags&DestroyForceUmount != 0 {
-		args = append(args, "-f")
-	}
+	args = append(args, flagsSlice(int(flags), []flag{
+		flag{DestroyRecursive, "-r"},
+		flag{DestroyRecursiveClones, "-R"},
+		flag{DestroyDeferDeletion, "-d"},
+		flag{DestroyForceUmount, "-f"},
+	})...)
 
 	args = append(args, d.Name)
 	_, err := zfs(args...)
@@ -379,4 +390,56 @@ func (d *Dataset) Diff(snapshot string) ([]*InodeChange, error) {
 		return nil, err
 	}
 	return inodeChanges, nil
+}
+
+// MountAll mount all available ZFS file systems with the given properties and
+// mount flags.
+func MountAll(properties map[string]string, flags MountFlag) error {
+	return mount("-a", properties, flags)
+}
+
+// Mount mounts dataset with the given properties and mount flags.
+// See "Temporary Mount Point Properties" for a list of available properties:
+// https://www.freebsd.org/cgi/man.cgi?zfs(8).
+func (d *Dataset) Mount(properties map[string]string, flags MountFlag) error {
+	return mount(d.Name, properties, flags)
+}
+
+func mount(target string, properties map[string]string, flags MountFlag) error {
+	args := []string{"mount"}
+	args = append(args, flagsSlice(int(flags), []flag{
+		flag{MountOverlay, "-O"},
+	})...)
+	if properties != nil {
+		args = append(args, propsSlice(properties)...)
+	}
+	args = append(args, target)
+	_, err := zfs(args...)
+	return err
+}
+
+// UnmountAll unmount all available ZFS file system
+func UnmountAll(flags UnmountFlag) error {
+	return unmount("-a", flags)
+}
+
+// UnmountByPath unmount all available ZFS file system
+func UnmountByPath(path string, flags UnmountFlag) error {
+	return unmount(path, flags)
+}
+
+// UnmountAll unmounts the given ZFS file system
+func (d *Dataset) Unmount(flags UnmountFlag) error {
+	return unmount(d.Name, flags)
+}
+
+func unmount(target string, flags UnmountFlag) error {
+	args := []string{"unmount"}
+
+	args = append(args, flagsSlice(int(flags), []flag{
+		flag{UnmountForce, "-f"},
+	})...)
+	args = append(args, target)
+	_, err := zfs(args...)
+	return err
 }

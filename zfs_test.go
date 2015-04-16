@@ -357,3 +357,30 @@ func TestDiff(t *testing.T) {
 		ok(t, fs.Destroy(zfs.DestroyForceUmount))
 	})
 }
+
+func TestMountUnmount(t *testing.T) {
+	zpoolTest(t, func() {
+		props := map[string]string{
+			"canmount": "noauto",
+		}
+		fs, err := zfs.CreateFilesystem("test/mountest", props)
+		ok(t, err)
+
+		err = fs.Mount(nil, zfs.MountDefault)
+		ok(t, err)
+
+		mountedFs, err := zfs.GetDataset(fs.Name)
+		ok(t, err)
+
+		equals(t, true, mountedFs.Mounted)
+
+		err = mountedFs.Unmount(zfs.UnmountDefault)
+		ok(t, err)
+
+		unmountedFs, err := zfs.GetDataset(fs.Name)
+		ok(t, err)
+
+		equals(t, false, unmountedFs.Mounted)
+	})
+}
+
