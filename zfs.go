@@ -267,6 +267,27 @@ func (d *Dataset) GetProperty(key string) (string, error) {
 	return out[0][2], nil
 }
 
+// Rename renames a dataset.
+func (d *Dataset) Rename(name string, createParent bool, recursiveRenameSnapshots bool) (*Dataset, error) {
+	args := make([]string, 2, 5)
+	args[0] = "rename"
+	args[1] = d.Name
+	args[2] = name
+	if createParent {
+		args = append(args, "-p")
+	}
+	if recursiveRenameSnapshots {
+		args = append(args, "-r")
+	}
+	_, err := zfs(args...)
+	if err != nil {
+		return d, err
+	}
+
+	return GetDataset(name)
+}
+
+
 // Snapshots returns a slice of all ZFS snapshots of a given dataset.
 func (d *Dataset) Snapshots() ([]*Dataset, error) {
 	return Snapshots(d.Name)
