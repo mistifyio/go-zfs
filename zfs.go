@@ -180,6 +180,44 @@ func (d *Dataset) Clone(dest string, properties map[string]string) (*Dataset, er
 	return GetDataset(dest)
 }
 
+func (d *Dataset) Umount(force bool) (*Dataset, error) {
+	if d.Type == DatasetSnapshot {
+		return nil, errors.New("cannot umount snapshots")
+	}
+	args := make([]string, 1, 3)
+	args[0] = "umount"
+	if force {
+		args = append(args, "-f")
+	}
+	args = append(args, d.Name)
+	_, err := zfs(args...)
+	if err != nil {
+		return nil, err
+	}
+	return GetDataset(d.Name)
+}
+
+func (d *Dataset) Mount(overlay bool, options []string) (*Dataset, error) {
+	if d.Type == DatasetSnapshot {
+		return nil, errors.New("cannot mount snapshots")
+	}
+	args := make([]string, 1, 3)
+	args[0] = "mount"
+	if overlay {
+		args = append(args, "-O")
+	}
+	if options != nil {
+		args = append(args, "-o")
+		args = append(args, strings.Join(options, ","))
+	}
+	args = append(args, d.Name)
+	_, err := zfs(args...)
+	if err != nil {
+		return nil, err
+	}
+	return GetDataset(d.Name)
+}
+
 // ReceiveSnapshot receives a ZFS stream from the input io.Reader, creates a
 // new snapshot with the specified name, and streams the input data into the
 // newly-created snapshot.
