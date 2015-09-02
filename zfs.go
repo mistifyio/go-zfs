@@ -92,13 +92,13 @@ type Logger interface {
 	Log(cmd []string)
 }
 
-type DefaultLogger struct{}
+type defaultLogger struct{}
 
-func (*DefaultLogger) Log(cmd []string) {
+func (*defaultLogger) Log(cmd []string) {
 	return
 }
 
-var logger Logger = &DefaultLogger{}
+var logger Logger = &defaultLogger{}
 
 // SetLogger set a log handler to log all commands including arguments before
 // they are executed
