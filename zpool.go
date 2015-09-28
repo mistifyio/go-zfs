@@ -49,13 +49,13 @@ func GetZpool(name string) (*Zpool, error) {
 }
 
 // Datasets returns a slice of all ZFS datasets in a zpool.
-func (z *Zpool) Datasets() ([]*Dataset, error) {
-	return Datasets(z.Name)
+func (z *Zpool) Datasets(depth int) ([]*Dataset, error) {
+	return Datasets(z.Name, depth)
 }
 
 // Snapshots returns a slice of all ZFS snapshots in a zpool.
-func (z *Zpool) Snapshots() ([]*Dataset, error) {
-	return Snapshots(z.Name)
+func (z *Zpool) Snapshots(depth int) ([]*Dataset, error) {
+	return Snapshots(z.Name, depth)
 }
 
 // CreateZpool creates a new ZFS zpool with the specified name, properties,
