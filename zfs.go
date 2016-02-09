@@ -180,9 +180,9 @@ func (d *Dataset) Clone(dest string, properties map[string]string) (*Dataset, er
 	return GetDataset(dest)
 }
 
-func (d *Dataset) Umount(force bool) (*Dataset, error) {
+func (d *Dataset) Unmount(force bool) (*Dataset, error) {
 	if d.Type == DatasetSnapshot {
-		return nil, errors.New("cannot umount snapshots")
+		return nil, errors.New("cannot unmount snapshots")
 	}
 	args := make([]string, 1, 3)
 	args[0] = "umount"
