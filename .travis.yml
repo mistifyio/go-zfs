@@ -1,0 +1,41 @@
+language: go
+sudo: required
+dist: trusty
+
+branches:
+  only:
+    - master
+
+env:
+  - rel=0.6.4.2
+  - rel=0.6.5.4
+
+matrix:
+  allow_failures:
+    - rel=0.6.5.4
+
+go:
+  - 1.5
+
+before_install:
+  - MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
+  - sudo apt-get update -y && sudo apt-get install -y linux-headers-$(uname -r) uuid-dev tree
+  - cd /tmp
+  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz
+  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz
+  - (cd spl-$rel && ./configure --prefix=/usr && make && sudo make install)
+  - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install)
+  - sudo modprobe zfs
+  - cd $TRAVIS_BUILD_DIR
+  - go get github.com/alecthomas/gometalinter
+  - gometalinter --install --update
+
+script:
+  - sudo -E $(which go) test -v ./...
+  - gometalinter --disable=golint --disable=vetshadow --enable=gofmt ./... || true
+  - gometalinter --disable-all --enable=golint --enable=vetshadow ./... || true
+
+notifications:
+  email: false
+  slack:
+    secure: "TQPVgIACp8DpTwMT2REtx2+3qBD9hb2xZ+Wz5yM21wlLO48ut3xSQBSOCktyYn5Nifgoc1BewOM0HrFTkfB0hoaxbAMPos1KXqUvP9oHrZfKEDlOG2Vz9Nacogp7P5TmZn/7ywWKRzfTRs8Y5YQ3Rlgn5I8b2gH+cOVKAdwjXvVmgOKEuxe5oXZTzEfys4ghzWYalmrttu8zuxxrI6VP1stb4gYmDLlTNRzmlz7p4DX4OWCuCf5NiUzx+EsZ3UIOp5UDYG7tWyXNU1BJfbqM+XQOu4B7J2XGvcun9kukxzAcDGEEffGf/bxKSBsvDQl96RX/aTFeSDmGFxFobNqbpLJRTRNUb/ajnyv8uft739CFgjefN95tiql3fJ7otnQmcoLdu/e0PxumWXJGXvJTiD1WbHHITBajxaKfUkZNJkoHJUv+5rh6zuCt/miMxH77Q4ZtM8GORFZnok4c5OGNWY6VIJCNhnQiM/iuNErCudviM6SPTtZBwZKwYbUGWykiTv0VeOX3igDALE1GcIeV8iGZPCe0rpORHpFssmB9Svk1tCaxqHxjB8Q87w4+aaADFL43joH3eysOofdmgNSAWye7FiRqmowMjO5tLF8cxL06pVpglwWj1yewEkmpQiz8YfaNPSbgGEhcGmoz5mdFsN1zNBGtG236rfv6LU99hHM="
