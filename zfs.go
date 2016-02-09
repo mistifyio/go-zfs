@@ -203,7 +203,7 @@ func (d *Dataset) Mount(overlay bool, options []string) (*Dataset, error) {
 	if d.Type == DatasetSnapshot {
 		return nil, errors.New("cannot mount snapshots")
 	}
-	args := make([]string, 1, 3)
+	args := make([]string, 1, 5)
 	args[0] = "mount"
 	if overlay {
 		args = append(args, "-O")
