@@ -266,8 +266,13 @@ func parseInodeChanges(lines [][]string) ([]*InodeChange, error) {
 	return changes, nil
 }
 
-func listByType(t, filter string) ([]*Dataset, error) {
-	args := []string{"get", "-rHp", "-t", t, "all"}
+func listByType(t, filter string, depth int) ([]*Dataset, error) {
+	var args []string
+	if depth > 0 {
+		args = []string{"get", fmt.Sprintf("-d%d", depth), "-rHp", "-t", t, "all"}
+	} else {
+		args = []string{"get", "-rHp", "-t", t, "all"}
+	}
 	if filter != "" {
 		args = append(args, filter)
 	}
