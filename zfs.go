@@ -180,6 +180,7 @@ func (d *Dataset) Clone(dest string, properties map[string]string) (*Dataset, er
 	return GetDataset(dest)
 }
 
+// Unmount unmounts currently mounted ZFS file systems.
 func (d *Dataset) Unmount(force bool) (*Dataset, error) {
 	if d.Type == DatasetSnapshot {
 		return nil, errors.New("cannot unmount snapshots")
@@ -197,6 +198,7 @@ func (d *Dataset) Unmount(force bool) (*Dataset, error) {
 	return GetDataset(d.Name)
 }
 
+// Mount mounts ZFS file systems.
 func (d *Dataset) Mount(overlay bool, options []string) (*Dataset, error) {
 	if d.Type == DatasetSnapshot {
 		return nil, errors.New("cannot mount snapshots")
@@ -332,7 +334,6 @@ func (d *Dataset) Rename(name string, createParent bool, recursiveRenameSnapshot
 
 	return GetDataset(name)
 }
-
 
 // Snapshots returns a slice of all ZFS snapshots of a given dataset.
 func (d *Dataset) Snapshots() ([]*Dataset, error) {
