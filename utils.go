@@ -2,10 +2,12 @@ package zfs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -91,34 +93,42 @@ func setUint(field *uint64, value string) error {
 }
 
 func (ds *Dataset) parseLine(line []string) error {
-	prop := line[1]
-	val := line[2]
-
 	var err error
 
-	switch prop {
-	case "available":
-		err = setUint(&ds.Avail, val)
-	case "compression":
-		setString(&ds.Compression, val)
-	case "mountpoint":
-		setString(&ds.Mountpoint, val)
-	case "quota":
-		err = setUint(&ds.Quota, val)
-	case "type":
-		setString(&ds.Type, val)
-	case "origin":
-		setString(&ds.Origin, val)
-	case "used":
-		err = setUint(&ds.Used, val)
-	case "volsize":
-		err = setUint(&ds.Volsize, val)
-	case "written":
-		err = setUint(&ds.Written, val)
-	case "logicalused":
-		err = setUint(&ds.Logicalused, val)
+	if len(line) != len(dsPropList) {
+		return errors.New("Output does not match what is expected on this platform")
 	}
-	return err
+	setString(&ds.Name, line[0])
+	setString(&ds.Origin, line[1])
+
+	if err = setUint(&ds.Used, line[2]); err != nil {
+		return err
+	}
+	if err = setUint(&ds.Avail, line[3]); err != nil {
+		return err
+	}
+
+	setString(&ds.Mountpoint, line[4])
+	setString(&ds.Compression, line[5])
+	setString(&ds.Type, line[6])
+
+	if err = setUint(&ds.Volsize, line[7]); err != nil {
+		return err
+	}
+	setString(&ds.Quota, line[8])
+
+	if runtime.GOOS != "solaris" {
+		if err = setUint(&ds.Written, line[9]); err != nil {
+			return err
+		}
+		if err = setUint(&ds.Logicalused, line[10]); err != nil {
+			return err
+		}
+		if err = setUint(&ds.Usedbydataset, line[11]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 /*
@@ -267,7 +277,8 @@ func parseInodeChanges(lines [][]string) ([]*InodeChange, error) {
 }
 
 func listByType(t, filter string) ([]*Dataset, error) {
-	args := []string{"get", "-rHp", "-t", t, "all"}
+	args := []string{"list", "-rHp", "-t", t, "-o", dsPropListOptions}
+
 	if filter != "" {
 		args = append(args, filter)
 	}
@@ -310,6 +321,8 @@ func (z *Zpool) parseLine(line []string) error {
 	var err error
 
 	switch prop {
+	case "name":
+		setString(&z.Name, val)
 	case "health":
 		setString(&z.Health, val)
 	case "allocated":

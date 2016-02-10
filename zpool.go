@@ -35,7 +35,9 @@ func zpool(arg ...string) ([][]string, error) {
 
 // GetZpool retrieves a single ZFS zpool by name.
 func GetZpool(name string) (*Zpool, error) {
-	out, err := zpool("get", "all", "-p", name)
+	args := zpoolArgs
+	args = append(args, name)
+	out, err := zpool(args...)
 	if err != nil {
 		return nil, err
 	}
