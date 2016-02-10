@@ -1,5 +1,9 @@
 package zfs
 
+import (
+	"strings"
+)
+
 // ZFS zpool states, which can indicate if a pool is online, offline,
 // degraded, etc.  More information regarding zpool states can be found here:
 // https://docs.oracle.com/cd/E19253-01/819-5461/gamno/index.html.
@@ -12,15 +16,9 @@ const (
 	ZpoolRemoved  = "REMOVED"
 )
 
-// Zpool is a ZFS zpool.  A pool is a top-level structure in ZFS, and can
-// contain many descendent datasets.
-type Zpool struct {
-	Name      string
-	Health    string
-	Allocated uint64
-	Size      uint64
-	Free      uint64
-}
+// List of Zpool properties to retrieve from zpool list command on a non-Solaris platform
+var zpoolPropList = []string{"name", "health", "allocated", "size", "free"}
+var zpoolPropListOptions = strings.Join(zpoolPropList, ",")
 
 // zpool is a helper function to wrap typical calls to zpool.
 func zpool(arg ...string) ([][]string, error) {
@@ -30,7 +28,8 @@ func zpool(arg ...string) ([][]string, error) {
 
 // GetZpool retrieves a single ZFS zpool by name.
 func GetZpool(name string) (*Zpool, error) {
-	out, err := zpool("get", "all", "-p", name)
+	args := []string{"list", zpoolListArgs, zpoolPropListOptions, name}
+	out, err := zpool(args...)
 	if err != nil {
 		return nil, err
 	}
