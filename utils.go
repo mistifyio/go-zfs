@@ -2,10 +2,12 @@ package zfs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -91,34 +93,25 @@ func setUint(field *uint64, value string) error {
 }
 
 func (ds *Dataset) parseLine(line []string) error {
-	prop := line[1]
-	val := line[2]
-
-	var err error
-
-	switch prop {
-	case "available":
-		err = setUint(&ds.Avail, val)
-	case "compression":
-		setString(&ds.Compression, val)
-	case "mountpoint":
-		setString(&ds.Mountpoint, val)
-	case "quota":
-		err = setUint(&ds.Quota, val)
-	case "type":
-		setString(&ds.Type, val)
-	case "origin":
-		setString(&ds.Origin, val)
-	case "used":
-		err = setUint(&ds.Used, val)
-	case "volsize":
-		err = setUint(&ds.Volsize, val)
-	case "written":
-		err = setUint(&ds.Written, val)
-	case "logicalused":
-		err = setUint(&ds.Logicalused, val)
+	if len(line) != len(DsPropList) {
+		return errors.New("ZFS output does not match what is expected" +
+			"on this platform")
 	}
-	return err
+	setString(&ds.Name, line[0])
+	setString(&ds.Avail, line[3])
+	setString(&ds.Compression, line[5])
+	setString(&ds.Mountpoint, line[4])
+	setString(&ds.Quota, line[8])
+	setString(&ds.Type, line[6])
+	setString(&ds.Origin, line[1])
+	setString(&ds.Used, line[2])
+	setString(&ds.Volsize, line[7])
+
+	if runtime.GOOS != "solaris" {
+		setString(&ds.Written, line[9])
+		setString(&ds.Logicalused, line[10])
+	}
+	return nil
 }
 
 /*
@@ -267,7 +260,8 @@ func parseInodeChanges(lines [][]string) ([]*InodeChange, error) {
 }
 
 func listByType(t, filter string) ([]*Dataset, error) {
-	args := []string{"get", "-rHp", "-t", t, "all"}
+	args := []string{"list", "-rH", "-t", t, "-o", strings.Join(DsPropList, ",")}
+
 	if filter != "" {
 		args = append(args, filter)
 	}
@@ -275,7 +269,6 @@ func listByType(t, filter string) ([]*Dataset, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var datasets []*Dataset
 
 	name := ""
@@ -304,20 +297,15 @@ func propsSlice(properties map[string]string) []string {
 }
 
 func (z *Zpool) parseLine(line []string) error {
-	prop := line[1]
-	val := line[2]
-
-	var err error
-
-	switch prop {
-	case "health":
-		setString(&z.Health, val)
-	case "allocated":
-		err = setUint(&z.Allocated, val)
-	case "size":
-		err = setUint(&z.Size, val)
-	case "free":
-		err = setUint(&z.Free, val)
+	if len(line) != len(ZpoolPropList) {
+		return errors.New("Zpool output not what is expected on" +
+			"this platform")
 	}
-	return err
+	setString(&z.Name, line[0])
+	setString(&z.Health, line[1])
+	setString(&z.Allocated, line[2])
+	setString(&z.Size, line[3])
+	setString(&z.Free, line[4])
+
+	return nil
 }

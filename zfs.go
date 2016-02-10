@@ -23,18 +23,17 @@ const (
 // The field definitions can be found in the ZFS manual:
 // http://www.freebsd.org/cgi/man.cgi?zfs(8).
 type Dataset struct {
-	Name          string
-	Origin        string
-	Used          uint64
-	Avail         uint64
-	Mountpoint    string
-	Compression   string
-	Type          string
-	Written       uint64
-	Volsize       uint64
-	Usedbydataset uint64
-	Logicalused   uint64
-	Quota         uint64
+	Name        string
+	Origin      string
+	Used        string
+	Avail       string
+	Mountpoint  string
+	Compression string
+	Type        string
+	Written     string
+	Volsize     string
+	Logicalused string
+	Quota       string
 }
 
 // InodeType is the type of inode as reported by Diff
@@ -145,7 +144,7 @@ func Volumes(filter string) ([]*Dataset, error) {
 // GetDataset retrieves a single ZFS dataset by name.  This dataset could be
 // any valid ZFS dataset type, such as a clone, filesystem, snapshot, or volume.
 func GetDataset(name string) (*Dataset, error) {
-	out, err := zfs("get", "-Hp", "all", name)
+	out, err := zfs("list", "-Hp", "-o", strings.Join(DsPropList, ","), name)
 	if err != nil {
 		return nil, err
 	}
@@ -403,13 +402,14 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 // A recursion depth may be specified, or a depth of 0 allows unlimited
 // recursion.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
-	args := []string{"get", "-t", "all", "-Hp", "all"}
+	args := []string{"list"}
 	if depth > 0 {
 		args = append(args, "-d")
 		args = append(args, strconv.FormatUint(depth, 10))
 	} else {
 		args = append(args, "-r")
 	}
+	args = append(args, "-t", "all", "-Hp", "-o", strings.Join(DsPropList, ","))
 	args = append(args, d.Name)
 
 	out, err := zfs(args...)
