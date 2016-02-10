@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mistifyio/go-zfs"
+	zfs "github.com/amitkris/go-zfs"
 )
 
 func sleep(delay int) {
@@ -78,7 +78,9 @@ func TestDatasets(t *testing.T) {
 		ok(t, err)
 		equals(t, zfs.DatasetFilesystem, ds.Type)
 		equals(t, "", ds.Origin)
-		assert(t, ds.Logicalused > 0, "Logicalused is not greater than 0")
+		if runtime.GOOS != "solaris" {
+			assert(t, ds.Logicalused != 0, "Logicalused is not greater than 0")
+		}
 	})
 }
 
@@ -264,8 +266,13 @@ func TestListZpool(t *testing.T) {
 	zpoolTest(t, func() {
 		pools, err := zfs.ListZpools()
 		ok(t, err)
-		equals(t, "test", pools[0].Name)
-
+		for _, pool := range pools {
+			if pool.Name == "test" {
+				equals(t, "test", pool.Name)
+				return
+			}
+		}
+		t.Fatal("Failed to find test pool")
 	})
 }
 
