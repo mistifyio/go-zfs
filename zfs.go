@@ -32,8 +32,8 @@ type Dataset struct {
 	Type          string
 	Written       uint64
 	Volsize       uint64
-	Usedbydataset uint64
 	Logicalused   uint64
+	Usedbydataset uint64
 	Quota         uint64
 }
 
@@ -145,7 +145,7 @@ func Volumes(filter string) ([]*Dataset, error) {
 // GetDataset retrieves a single ZFS dataset by name.  This dataset could be
 // any valid ZFS dataset type, such as a clone, filesystem, snapshot, or volume.
 func GetDataset(name string) (*Dataset, error) {
-	out, err := zfs("get", "-Hp", "all", name)
+	out, err := zfs("list", "-Hp", "-o", dsPropListOptions, name)
 	if err != nil {
 		return nil, err
 	}
@@ -403,13 +403,14 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 // A recursion depth may be specified, or a depth of 0 allows unlimited
 // recursion.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
-	args := []string{"get", "-t", "all", "-Hp", "all"}
+	args := []string{"list"}
 	if depth > 0 {
 		args = append(args, "-d")
 		args = append(args, strconv.FormatUint(depth, 10))
 	} else {
 		args = append(args, "-r")
 	}
+	args = append(args, "-t", "all", "-Hp", "-o", dsPropListOptions)
 	args = append(args, d.Name)
 
 	out, err := zfs(args...)
