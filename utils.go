@@ -133,26 +133,63 @@ func (ds *Dataset) parseLine(line []string) error {
  * application.
  */
 func unescapeFilepath(path string) (string, error) {
-	buf := make([]byte, 0, len(path))
-	llen := len(path)
-	for i := 0; i < llen; {
-		if path[i] == '\\' {
-			if llen < i+4 {
-				return "", fmt.Errorf("Invalid octal code: too short")
-			}
-			octalCode := path[(i + 1):(i + 4)]
-			val, err := strconv.ParseUint(octalCode, 8, 8)
-			if err != nil {
-				return "", fmt.Errorf("Invalid octal code: %v", err)
-			}
-			buf = append(buf, byte(val))
-			i += 4
-		} else {
-			buf = append(buf, path[i])
-			i++
+	pattern := "\\0040"
+	if strings.Index(path, pattern) == -1 {
+		pattern = "\\040"
+		if strings.Index(path, pattern) == -1 {
+			return path, nil
 		}
+
 	}
-	return string(buf), nil
+	plen := len(pattern)
+
+	orig := make([]byte, len(path))
+	buf := orig
+	blen := 0
+
+	for {
+		index := strings.Index(path, pattern)
+		if index > 0 {
+			l := copy(buf, path[:index])
+			path = path[index:]
+			buf = buf[l:]
+			blen += l
+			continue
+
+		} else if index == -1 {
+			l := copy(buf, path)
+			buf = buf[l:]
+			blen += l
+			break
+
+		}
+
+		path = path[index+plen:]
+		index = strings.Index(path, pattern)
+		if index == -1 {
+			return "", fmt.Errorf("invalid octal code: too short")
+		}
+
+		// skip leading '\' char
+		escaped := path[1:index]
+
+		bytes := strings.Split(escaped, "\\")
+		blen += len(bytes)
+
+		for _, b := range bytes {
+
+			val, err := strconv.ParseUint(b, 8, 8)
+			if err != nil {
+				return "", fmt.Errorf("invalid octal code: %v", err)
+			}
+
+			buf[0] = byte(val)
+			buf = buf[1:]
+		}
+
+		path = path[index+plen:]
+	}
+	return string(orig[:blen]), nil
 }
 
 var changeTypeMap = map[string]ChangeType{
