@@ -71,7 +71,7 @@ func zpoolTest(t *testing.T, fn func()) {
 
 func TestDatasets(t *testing.T) {
 	zpoolTest(t, func() {
-		_, err := zfs.Datasets("")
+		_, err := zfs.Datasets("", 1)
 		ok(t, err)
 
 		ds, err := zfs.GetDataset("test")
@@ -85,7 +85,7 @@ func TestDatasets(t *testing.T) {
 func TestSnapshots(t *testing.T) {
 
 	zpoolTest(t, func() {
-		snapshots, err := zfs.Snapshots("")
+		snapshots, err := zfs.Snapshots("", 1)
 		ok(t, err)
 
 		for _, snapshot := range snapshots {
@@ -99,7 +99,7 @@ func TestFilesystems(t *testing.T) {
 		f, err := zfs.CreateFilesystem("test/filesystem-test", nil)
 		ok(t, err)
 
-		filesystems, err := zfs.Filesystems("")
+		filesystems, err := zfs.Filesystems("", 1)
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
@@ -121,7 +121,7 @@ func TestCreateFilesystemWithProperties(t *testing.T) {
 
 		equals(t, "lz4", f.Compression)
 
-		filesystems, err := zfs.Filesystems("")
+		filesystems, err := zfs.Filesystems("", 1)
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
@@ -141,7 +141,7 @@ func TestVolumes(t *testing.T) {
 		sleep(1)
 
 		equals(t, zfs.DatasetVolume, v.Type)
-		volumes, err := zfs.Volumes("")
+		volumes, err := zfs.Volumes("", 1)
 		ok(t, err)
 
 		for _, volume := range volumes {
@@ -157,7 +157,7 @@ func TestSnapshot(t *testing.T) {
 		f, err := zfs.CreateFilesystem("test/snapshot-test", nil)
 		ok(t, err)
 
-		filesystems, err := zfs.Filesystems("")
+		filesystems, err := zfs.Filesystems("", 1)
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
@@ -182,7 +182,7 @@ func TestClone(t *testing.T) {
 		f, err := zfs.CreateFilesystem("test/snapshot-test", nil)
 		ok(t, err)
 
-		filesystems, err := zfs.Filesystems("")
+		filesystems, err := zfs.Filesystems("", 1)
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
@@ -213,7 +213,7 @@ func TestSendSnapshot(t *testing.T) {
 		f, err := zfs.CreateFilesystem("test/snapshot-test", nil)
 		ok(t, err)
 
-		filesystems, err := zfs.Filesystems("")
+		filesystems, err := zfs.Filesystems("", 1)
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
@@ -264,8 +264,7 @@ func TestListZpool(t *testing.T) {
 	zpoolTest(t, func() {
 		pools, err := zfs.ListZpools()
 		ok(t, err)
-		equals(t, "test", pools[0].Name)
-
+		equals(t, true, len(pools)>0)
 	})
 }
 
@@ -274,7 +273,7 @@ func TestRollback(t *testing.T) {
 		f, err := zfs.CreateFilesystem("test/snapshot-test", nil)
 		ok(t, err)
 
-		filesystems, err := zfs.Filesystems("")
+		filesystems, err := zfs.Filesystems("", 1)
 		ok(t, err)
 
 		for _, filesystem := range filesystems {
