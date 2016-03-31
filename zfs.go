@@ -117,29 +117,29 @@ func zfs(arg ...string) ([][]string, error) {
 // Datasets returns a slice of ZFS datasets, regardless of type.
 // A filter argument may be passed to select a dataset with the matching name,
 // or empty string ("") may be used to select all datasets.
-func Datasets(filter string) ([]*Dataset, error) {
-	return listByType("all", filter)
+func Datasets(filter string, depth int) ([]*Dataset, error) {
+	return listByType("all", filter, depth)
 }
 
 // Snapshots returns a slice of ZFS snapshots.
 // A filter argument may be passed to select a snapshot with the matching name,
 // or empty string ("") may be used to select all snapshots.
-func Snapshots(filter string) ([]*Dataset, error) {
-	return listByType(DatasetSnapshot, filter)
+func Snapshots(filter string, depth int) ([]*Dataset, error) {
+	return listByType(DatasetSnapshot, filter, depth)
 }
 
 // Filesystems returns a slice of ZFS filesystems.
 // A filter argument may be passed to select a filesystem with the matching name,
 // or empty string ("") may be used to select all filesystems.
-func Filesystems(filter string) ([]*Dataset, error) {
-	return listByType(DatasetFilesystem, filter)
+func Filesystems(filter string, depth int) ([]*Dataset, error) {
+	return listByType(DatasetFilesystem, filter, depth)
 }
 
 // Volumes returns a slice of ZFS volumes.
 // A filter argument may be passed to select a volume with the matching name,
 // or empty string ("") may be used to select all volumes.
-func Volumes(filter string) ([]*Dataset, error) {
-	return listByType(DatasetVolume, filter)
+func Volumes(filter string, depth int) ([]*Dataset, error) {
+	return listByType(DatasetVolume, filter, depth)
 }
 
 // GetDataset retrieves a single ZFS dataset by name.  This dataset could be
@@ -337,7 +337,7 @@ func (d *Dataset) Rename(name string, createParent bool, recursiveRenameSnapshot
 
 // Snapshots returns a slice of all ZFS snapshots of a given dataset.
 func (d *Dataset) Snapshots() ([]*Dataset, error) {
-	return Snapshots(d.Name)
+	return Snapshots(d.Name, 1)
 }
 
 // CreateFilesystem creates a new ZFS filesystem with the specified name and
