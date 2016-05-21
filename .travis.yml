@@ -32,7 +32,8 @@ before_install:
   - gometalinter --install --update
 
 script:
-  - sudo -E $(which go) test -v ./...
+  - go test -c
+  - sudo ./go-zfs.test -test.v
   - gometalinter --disable=golint --disable=vetshadow --enable=gofmt ./... || true
   - gometalinter --disable-all --enable=golint --enable=vetshadow ./... || true
 
