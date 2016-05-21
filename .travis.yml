@@ -16,6 +16,7 @@ matrix:
 
 go:
   - 1.5
+  - 1.6
 
 before_install:
   - MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
