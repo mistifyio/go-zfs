@@ -10,10 +10,6 @@ env:
   - VZFS=0.6.4.2
   - VZFS=0.6.5.7
 
-matrix:
-  allow_failures:
-    - env: rel=0.6.5.7
-
 go:
   - 1.5
   - 1.6
@@ -33,7 +29,7 @@ before_install:
 
 script:
   - go test -c
-  - sudo ./go-zfs.test -test.v
+  - sudo VZFS=$VZFS ./go-zfs.test -test.v
   - gometalinter --disable=golint --disable=vetshadow --enable=gofmt ./... || true
   - gometalinter --disable-all --enable=golint --enable=vetshadow ./... || true
 
