@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -312,6 +313,23 @@ func TestRollback(t *testing.T) {
 	})
 }
 
+func getZFSDiffExpected() string {
+	unescaped := "/test/origin/i ❤ unicode"
+	escaped := "/test/origin/i\x040\x1c2\x135\x144\x040unicode"
+
+	zString := os.Getenv("VZFS")
+	if zString == "" {
+		return unescaped
+	}
+
+	version := strings.Split(zString, ".")
+	if version[0] <= "0" && version[1] <= "6" && version[2] <= "4" {
+		return unescaped
+	}
+
+	return escaped
+}
+
 func TestDiff(t *testing.T) {
 	zpoolTest(t, func() {
 		fs, err := zfs.CreateFilesystem("test/origin", nil)
@@ -353,7 +371,7 @@ func TestDiff(t *testing.T) {
 		equals(t, zfs.File, inodeChanges[2].Type)
 		equals(t, zfs.Renamed, inodeChanges[2].Change)
 
-		equals(t, "/test/origin/i ❤ unicode", inodeChanges[3].Path)
+		equals(t, getZFSDiffExpected(), inodeChanges[3].Path)
 		equals(t, zfs.File, inodeChanges[3].Type)
 		equals(t, zfs.Created, inodeChanges[3].Change)
 
