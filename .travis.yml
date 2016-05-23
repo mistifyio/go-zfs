@@ -7,12 +7,12 @@ branches:
     - master
 
 env:
-  - rel=0.6.4.2
-  - rel=0.6.5.4
+  - VZFS=0.6.4.2
+  - VZFS=0.6.5.4
 
 matrix:
   allow_failures:
-    - env: rel=0.6.5.4
+    - env: VZFS=0.6.5.4
 
 go:
   - 1.5
@@ -21,10 +21,10 @@ before_install:
   - MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
   - sudo apt-get update -y && sudo apt-get install -y linux-headers-$(uname -r) uuid-dev tree
   - cd /tmp
-  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz
-  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz
-  - (cd spl-$rel && ./configure --prefix=/usr && make && sudo make install)
-  - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install)
+  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$VZFS/spl-$VZFS.tar.gz | tar xz
+  - curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$VZFS/zfs-$VZFS.tar.gz | tar xz
+  - (cd spl-$VZFS && ./configure --prefix=/usr && make && sudo make install)
+  - (cd zfs-$VZFS && ./configure --prefix=/usr && make && sudo make install)
   - sudo modprobe zfs
   - cd $TRAVIS_BUILD_DIR
   - go get github.com/alecthomas/gometalinter
