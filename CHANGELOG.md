@@ -4,7 +4,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 This change log follows the advice of [Keep a CHANGELOG](https://github.com/olivierlacan/keep-a-changelog).
 
 
-## [Unreleased]
+## [2.2.0] - (2016-05-24)
 ### Added
 - Rename, Mount and Unmount methods.
 - Parse more fields into Zpool type:
@@ -54,7 +54,7 @@ This change log follows the advice of [Keep a CHANGELOG](https://github.com/oliv
 ## [1.0.0] - 2014-11-12
 
 
-[Unreleased]: https://github.com/mistifyio/go-zfs/compare/v2.1.1...HEAD
+[2.2.0]: https://github.com/mistifyio/go-zfs/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/mistifyio/go-zfs/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/mistifyio/go-zfs/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/mistifyio/go-zfs/compare/v1.0.0...v2.0.0
