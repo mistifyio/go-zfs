@@ -18,6 +18,8 @@ go:
   - 1.7
 
 before_install:
+  - go get github.com/alecthomas/gometalinter
+  - gometalinter --install --update
   - MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
   - sudo apt-get update -y && sudo apt-get install -y linux-headers-$(uname -r) uuid-dev tree
   - cd /tmp
@@ -27,8 +29,6 @@ before_install:
   - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install)
   - sudo modprobe zfs
   - cd $TRAVIS_BUILD_DIR
-  - go get github.com/alecthomas/gometalinter
-  - gometalinter --install --update
 
 script:
   - sudo -E $(which go) test -v ./...
