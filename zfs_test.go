@@ -104,7 +104,7 @@ func TestDatasetGetProperty(t *testing.T) {
 
 		prop, err = ds.GetProperty("compression")
 		ok(t, err)
-		equals(t, "VALUE", prop)
+		equals(t, "off", prop)
 	})
 }
 
