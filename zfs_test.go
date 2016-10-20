@@ -93,6 +93,21 @@ func TestDatasets(t *testing.T) {
 	})
 }
 
+func TestDatasetGetProperty(t *testing.T) {
+	zpoolTest(t, func() {
+		ds, err := zfs.GetDataset("test")
+		ok(t, err)
+
+		prop, err := ds.GetProperty("foobarbaz")
+		nok(t, err)
+		equals(t, "", prop)
+
+		prop, err = ds.GetProperty("compression")
+		ok(t, err)
+		equals(t, "VALUE", prop)
+	})
+}
+
 func TestSnapshots(t *testing.T) {
 
 	zpoolTest(t, func() {
