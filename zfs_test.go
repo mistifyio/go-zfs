@@ -41,6 +41,15 @@ func ok(tb testing.TB, err error) {
 	}
 }
 
+// nok fails the test if an err is nil.
+func nok(tb testing.TB, err error) {
+	if err == nil {
+		_, file, line, _ := runtime.Caller(1)
+		fmt.Printf("\033[31m%s:%d: expected error: %s\033[39m\n\n", filepath.Base(file), line)
+		tb.FailNow()
+	}
+}
+
 // equals fails the test if exp is not equal to act.
 func equals(tb testing.TB, exp, act interface{}) {
 	if !reflect.DeepEqual(exp, act) {
@@ -81,6 +90,21 @@ func TestDatasets(t *testing.T) {
 		if runtime.GOOS != "solaris" {
 			assert(t, ds.Logicalused != 0, "Logicalused is not greater than 0")
 		}
+	})
+}
+
+func TestDatasetGetProperty(t *testing.T) {
+	zpoolTest(t, func() {
+		ds, err := zfs.GetDataset("test")
+		ok(t, err)
+
+		prop, err := ds.GetProperty("foobarbaz")
+		nok(t, err)
+		equals(t, "", prop)
+
+		prop, err = ds.GetProperty("compression")
+		ok(t, err)
+		equals(t, "VALUE", prop)
 	})
 }
 
