@@ -337,7 +337,11 @@ func (z *Zpool) parseLine(line []string) error {
 		err = setUint(&z.Free, val)
 	case "fragmentation":
 		// Trim trailing "%" before parsing uint
-		err = setUint(&z.Fragmentation, val[:len(val)-1])
+		i := strings.Index(val, "%")
+		if i < 0 {
+			i = len(val)
+		}
+		err = setUint(&z.Fragmentation, val[:i])
 	case "readonly":
 		z.ReadOnly = val == "on"
 	case "freeing":
