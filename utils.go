@@ -65,7 +65,7 @@ func (c *command) Run(arg ...string) ([][]string, error) {
 	output := make([][]string, len(lines))
 
 	for i, l := range lines {
-		output[i] = strings.Fields(l)
+		output[i] = strings.FieldsFunc(l, func(r rune) bool { return r == '\t' })
 	}
 
 	return output, nil
