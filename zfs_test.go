@@ -380,7 +380,7 @@ func TestDiff(t *testing.T) {
 		equals(t, zfs.File, inodeChanges[2].Type)
 		equals(t, zfs.Renamed, inodeChanges[2].Change)
 
-		equals(t, "/test/origin/i ❤ unicode", inodeChanges[3].Path)
+		equalsIgnore(t, "/test/origin/i ❤ unicode", inodeChanges[3].Path)
 		equals(t, zfs.File, inodeChanges[3].Type)
 		equals(t, zfs.Created, inodeChanges[3].Change)
 
