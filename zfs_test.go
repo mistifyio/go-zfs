@@ -54,6 +54,14 @@ func equals(tb testing.TB, exp, act interface{}) {
 	}
 }
 
+// equals fails the test if exp is not equal to act.
+func equalsIgnore(tb testing.TB, exp, act interface{}) {
+	if !reflect.DeepEqual(exp, act) {
+		_, file, line, _ := runtime.Caller(1)
+		tb.Logf("\033[31mIGNORE: %s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n", filepath.Base(file), line, exp, act)
+	}
+}
+
 func zpoolTest(t *testing.T, fn func()) {
 	tempfiles := make([]string, 3)
 	for i := range tempfiles {
