@@ -14,7 +14,7 @@ const (
 	ZpoolRemoved  = "REMOVED"
 )
 
-var zpoolArgs = []string{"get", "-p", zpoolPropListOptions}
+var zpoolArgs = []string{"get", "-Hp", zpoolPropListOptions}
 var zpoolPropListOptions = strings.Join(zpoolPropList, ",")
 
 // Zpool is a ZFS zpool.  A pool is a top-level structure in ZFS, and can
