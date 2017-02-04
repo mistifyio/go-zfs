@@ -403,15 +403,11 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 // A recursion depth may be specified, or a depth of 0 allows unlimited
 // recursion.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
-	args := []string{"list"}
+	args := []string{"list", "-Hpr", "-t", "all"}
 	if depth > 0 {
-		args = append(args, "-d")
-		args = append(args, strconv.FormatUint(depth, 10))
-	} else {
-		args = append(args, "-r")
+		args = append(args, "-d", strconv.FormatUint(depth, 10))
 	}
-	args = append(args, "-t", "all", "-Hp", "-o", dsPropListOptions)
-	args = append(args, d.Name)
+	args = append(args, "-o", dsPropListOptions, d.Name)
 
 	out, err := zfs(args...)
 	if err != nil {
