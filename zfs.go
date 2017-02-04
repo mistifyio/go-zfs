@@ -78,6 +78,8 @@ const (
 	DestroyForceUmount                 = 1 << iota
 )
 
+var dsPropListOptions = strings.Join(dsPropList, ",")
+
 // InodeChange represents a change as reported by Diff
 type InodeChange struct {
 	Change               ChangeType
