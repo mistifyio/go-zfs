@@ -67,6 +67,17 @@ const (
 	Renamed
 )
 
+// SendFlag is the options flag passed to SendSnapshot and SendSnapshotIncremental
+type SendFlag int
+
+// Valid send options
+const (
+	SendDefault	   SendFlag = 1 << iota
+	ReplicationStream	    = 1 << iota
+	IncrementalStream	    = 1 << iota
+	IncrementalPackage	    = 1 << iota
+)
+
 // DestroyFlag is the options flag passed to Destroy
 type DestroyFlag int
 
@@ -224,24 +235,60 @@ func (d *Dataset) Mount(overlay bool, options []string) (*Dataset, error) {
 // ReceiveSnapshot receives a ZFS stream from the input io.Reader, creates a
 // new snapshot with the specified name, and streams the input data into the
 // newly-created snapshot.
-func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error) {
+// It includes the option "-F" like boolean value.
+func ReceiveSnapshot(input io.Reader, name string, overwrite bool) (*Dataset, error) {
 	c := command{Command: "zfs", Stdin: input}
-	_, err := c.Run("receive", name)
-	if err != nil {
-		return nil, err
+	if overwrite == false {
+		_, err := c.Run("receive", name)
+		if err != nil {
+			return nil, err
+		}
+		return GetDataset(name)
+	} else {
+		_, err := c.Run("receive", "-F",name)
+		if err != nil {
+			return nil, err
+		}
+		return GetDataset(name)
 	}
-	return GetDataset(name)
 }
 
 // SendSnapshot sends a ZFS stream of a snapshot to the input io.Writer.
 // An error will be returned if the input dataset is not of snapshot type.
-func (d *Dataset) SendSnapshot(output io.Writer) error {
+// It includes the option "-R".
+func (d *Dataset) SendSnapshot(output io.Writer, flags SendFlag) error {
 	if d.Type != DatasetSnapshot {
 		return errors.New("can only send snapshots")
 	}
 
+	// Flags for SendSnapshot
+	option := ""
+	if flags&IncrementalStream !=0 {
+		option = "-R"
+	}
+
 	c := command{Command: "zfs", Stdout: output}
-	_, err := c.Run("send", d.Name)
+	_, err := c.Run("send", option, d.Name)
+	return err
+}
+
+// SendSnapshotIncremental sends a ZFS stream of snapshots to the input io.Writer.
+// It includes the flags "-i" and "-I".
+func SendSnapshotIncremental(output io.Writer, d1 *Dataset, d2 *Dataset, flags SendFlag) error {
+	if d1.Type != DatasetSnapshot || d2.Type != DatasetSnapshot {
+		return errors.New("can only send snapshots")
+	}
+
+	// Flags for SendSnapshot
+	option := ""
+	if flags&IncrementalStream !=0 {
+		option = "-i"
+	}
+	if flags&IncrementalPackage  !=0 {
+		option = "-I"
+	}
+	c := command{Command: "zfs", Stdout: output}
+	_, err := c.Run("send", option, d1.Name, d2.Name)
 	return err
 }
 
