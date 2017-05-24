@@ -255,7 +255,7 @@ func TestSendSnapshot(t *testing.T) {
 		ok(t, err)
 		defer os.Remove(file.Name())
 
-		err = s.SendSnapshot(file)
+		err = s.SendSnapshot(file, zfs.SendDefault)
 		ok(t, err)
 
 		ok(t, s.Destroy(zfs.DestroyDefault))

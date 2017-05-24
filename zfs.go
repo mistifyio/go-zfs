@@ -260,16 +260,16 @@ func (d *Dataset) SendSnapshot(output io.Writer, flags SendFlag) error {
 	if d.Type != DatasetSnapshot {
 		return errors.New("can only send snapshots")
 	}
+	c := command{Command: "zfs", Stdout: output}
 
 	// Flags for SendSnapshot
-	option := ""
 	if flags&IncrementalStream !=0 {
-		option = "-R"
+		_, err := c.Run("send", "-R", d.Name)
+		return err
+	} else {
+		_, err := c.Run("send", d.Name)
+		return err
 	}
-
-	c := command{Command: "zfs", Stdout: output}
-	_, err := c.Run("send", option, d.Name)
-	return err
 }
 
 // SendSnapshotIncremental sends a ZFS stream of snapshots to the input io.Writer.
