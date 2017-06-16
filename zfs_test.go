@@ -383,7 +383,7 @@ func TestDiff(t *testing.T) {
 		snapshot, err := fs.Snapshot("snapshot", false)
 		ok(t, err)
 
-		unicodeFile, err := os.Create(filepath.Join(fs.Mountpoint, "i love unicode"))
+		unicodeFile, err := os.Create(filepath.Join(fs.Mountpoint, "i_love_unicode"))
 		ok(t, err)
 
 		err = os.Rename(movedFile.Name(), movedFile.Name()+"-new")
@@ -410,7 +410,7 @@ func TestDiff(t *testing.T) {
 		equals(t, zfs.File, inodeChanges[2].Type)
 		equals(t, zfs.Renamed, inodeChanges[2].Change)
 
-		equals(t, "/test/origin/i love unicode", inodeChanges[3].Path)
+		equals(t, "/test/origin/i_love_unicode", inodeChanges[3].Path)
 		equals(t, zfs.File, inodeChanges[3].Type)
 		equals(t, zfs.Created, inodeChanges[3].Change)
 
