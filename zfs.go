@@ -67,19 +67,8 @@ const (
 	Renamed
 )
 
-// SendFlag is the options flag passed to SendSnapshot and SendSnapshotIncremental
-type SendFlag int
-
-// Valid send options
-const (
-	SendDefault	   SendFlag = 1 << iota
-	ReplicationStream	    = 1 << iota
-	IncrementalStream	    = 1 << iota
-	IncrementalPackage	    = 1 << iota
-)
-
 // DestroyFlag is the options flag passed to Destroy
-type DestroyFlag int
+type DestroyFlag int64
 
 // Valid destroy options
 const (
@@ -88,6 +77,17 @@ const (
 	DestroyRecursiveClones             = 1 << iota
 	DestroyDeferDeletion               = 1 << iota
 	DestroyForceUmount                 = 1 << iota
+)
+
+// SendFlag is the options flags passed to SendSnapshot
+type SendFlag int64
+
+// Valid send options
+const (
+	SendDefault	   SendFlag = 1 << iota
+	IncrementalStream	    = 1 << iota
+	IncrementalPackage	    = 1 << iota
+	ReplicationStream	    = 1 << iota
 )
 
 // InodeChange represents a change as reported by Diff
@@ -235,27 +235,29 @@ func (d *Dataset) Mount(overlay bool, options []string) (*Dataset, error) {
 // ReceiveSnapshot receives a ZFS stream from the input io.Reader, creates a
 // new snapshot with the specified name, and streams the input data into the
 // newly-created snapshot.
-// It includes the option "-F" like boolean value.
-func ReceiveSnapshot(input io.Reader, name string, overwrite bool) (*Dataset, error) {
+func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error) {
 	c := command{Command: "zfs", Stdin: input}
-	if overwrite == false {
-		_, err := c.Run("receive", name)
-		if err != nil {
-			return nil, err
-		}
-		return GetDataset(name)
-	} else {
-		_, err := c.Run("receive", "-F",name)
-		if err != nil {
-			return nil, err
-		}
-		return GetDataset(name)
+	_, err := c.Run("receive", name)
+	if err != nil {
+		return nil, err
 	}
+	return GetDataset(name)
+}
+
+// ReceiveSnapshotRollback forces a rollback of the file system to the most recent
+// snapshot before the receive is initiated. After, receives a ZFS stream from the
+// input io.Reader like ReceiveSnapshot does.
+func ReceiveSnapshotRollback(input io.Reader, name string, overwrite bool) (*Dataset, error) {
+	c := command{Command: "zfs", Stdin: input}
+	_, err := c.Run("receive", "-F", name)
+	if err != nil {
+		return nil, err
+	}
+	return GetDataset(name)
 }
 
 // SendSnapshot sends a ZFS stream of a snapshot to the input io.Writer.
 // An error will be returned if the input dataset is not of snapshot type.
-// It includes the option "-R".
 func (d *Dataset) SendSnapshot(output io.Writer, flags SendFlag) error {
 	if d.Type != DatasetSnapshot {
 		return errors.New("can only send snapshots")
@@ -263,7 +265,7 @@ func (d *Dataset) SendSnapshot(output io.Writer, flags SendFlag) error {
 	c := command{Command: "zfs", Stdout: output}
 
 	// Flags for SendSnapshot
-	if flags&IncrementalStream !=0 {
+	if flags&ReplicationStream !=0 {
 		_, err := c.Run("send", "-R", d.Name)
 		return err
 	} else {
@@ -272,9 +274,9 @@ func (d *Dataset) SendSnapshot(output io.Writer, flags SendFlag) error {
 	}
 }
 
-// SendSnapshotIncremental sends a ZFS stream of snapshots to the input io.Writer.
-// It includes the flags "-i" and "-I".
-func SendSnapshotIncremental(output io.Writer, d1 *Dataset, d2 *Dataset, flags SendFlag) error {
+// SendSnapshotIncremental sends a ZFS incremental stream to the input io.Writer.
+// Includes options -i and -I to send an incremental stream or a stream package respectively.
+func SendSnapshotIncremental(output io.Writer, d1 *Dataset, d2 *Dataset, replication bool, flags SendFlag) error {
 	if d1.Type != DatasetSnapshot || d2.Type != DatasetSnapshot {
 		return errors.New("can only send snapshots")
 	}
@@ -284,12 +286,18 @@ func SendSnapshotIncremental(output io.Writer, d1 *Dataset, d2 *Dataset, flags S
 	if flags&IncrementalStream !=0 {
 		option = "-i"
 	}
-	if flags&IncrementalPackage  !=0 {
+	if flags&IncrementalPackage !=0 {
 		option = "-I"
 	}
 	c := command{Command: "zfs", Stdout: output}
-	_, err := c.Run("send", option, d1.Name, d2.Name)
-	return err
+	if replication == true {
+		stream := "-R"
+		_, err := c.Run("send", stream, option, d1.Name, d2.Name)
+		return err
+	} else {
+		_, err := c.Run("send", option, d1.Name, d2.Name)
+		return err
+	}
 }
 
 // CreateVolume creates a new ZFS volume with the specified name, size, and
