@@ -10,10 +10,6 @@ env:
   - rel=0.6.4.2
   - rel=0.6.5.4
 
-matrix:
-  allow_failures:
-    - env: rel=0.6.5.4
-
 go:
   - 1.7
 
