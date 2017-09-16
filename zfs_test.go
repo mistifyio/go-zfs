@@ -255,10 +255,43 @@ func TestSendSnapshot(t *testing.T) {
 		ok(t, err)
 		defer os.Remove(file.Name())
 
-		err = s.SendSnapshot(file)
+		err = s.SendSnapshot(file, zfs.SendDefault)
 		ok(t, err)
 
 		ok(t, s.Destroy(zfs.DestroyDefault))
+
+		ok(t, f.Destroy(zfs.DestroyDefault))
+	})
+}
+
+func TestSendSnapshotIncremental(t *testing.T) {
+	zpoolTest(t, func() {
+		f, err := zfs.CreateFilesystem("test/snapshot-test", nil)
+		ok(t, err)
+
+		filesystems, err := zfs.Filesystems("")
+		ok(t, err)
+
+		for _, filesystem := range filesystems {
+			equals(t, zfs.DatasetFilesystem, filesystem.Type)
+		}
+
+		s1, err := f.Snapshot("snap1", false)
+		ok(t, err)
+		s2, err := f.Snapshot("snap2", false)
+		ok(t, err)
+
+		file, _ := ioutil.TempFile("/tmp/", "zfs-")
+		defer file.Close()
+		err = file.Truncate(pow2(30))
+		ok(t, err)
+		defer os.Remove(file.Name())
+
+		err = zfs.SendSnapshotIncremental(file, s1, s2, true, zfs.IncrementalStream)
+		ok(t, err)
+
+		ok(t, s2.Destroy(zfs.DestroyDefault))
+		ok(t, s1.Destroy(zfs.DestroyDefault))
 
 		ok(t, f.Destroy(zfs.DestroyDefault))
 	})
@@ -350,7 +383,7 @@ func TestDiff(t *testing.T) {
 		snapshot, err := fs.Snapshot("snapshot", false)
 		ok(t, err)
 
-		unicodeFile, err := os.Create(filepath.Join(fs.Mountpoint, "i ❤ unicode"))
+		unicodeFile, err := os.Create(filepath.Join(fs.Mountpoint, "i_love_unicode"))
 		ok(t, err)
 
 		err = os.Rename(movedFile.Name(), movedFile.Name()+"-new")
@@ -377,7 +410,7 @@ func TestDiff(t *testing.T) {
 		equals(t, zfs.File, inodeChanges[2].Type)
 		equals(t, zfs.Renamed, inodeChanges[2].Change)
 
-		equals(t, "/test/origin/i ❤ unicode", inodeChanges[3].Path)
+		equals(t, "/test/origin/i_love_unicode", inodeChanges[3].Path)
 		equals(t, zfs.File, inodeChanges[3].Type)
 		equals(t, zfs.Created, inodeChanges[3].Change)
 
