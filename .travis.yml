@@ -29,8 +29,8 @@ before_install:
 
 script:
   - sudo -E $(which go) test -v ./...
-  - gometalinter --disable=golint --disable=vetshadow --enable=gofmt ./... || true
-  - gometalinter --disable-all --enable=golint --enable=vetshadow ./... || true
+  - gometalinter --vendor --vendored-linters ./... || true
+  - gometalinter --errors --vendor --vendored-linters ./...
 
 notifications:
   email: false
