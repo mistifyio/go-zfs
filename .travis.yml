@@ -11,7 +11,8 @@ env:
   - rel=0.7.3
 
 go:
-  - 1.7
+  - 1.9
+  - tip
 
 before_install:
   - go get github.com/alecthomas/gometalinter
