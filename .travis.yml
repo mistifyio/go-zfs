@@ -37,5 +37,4 @@ script:
 
 notifications:
   email: false
-  slack:
-    secure: "AbDJNjWyf/z+neX0HtoIUynjBcdvbhrsuyzoeaImZaanUtyo3cWNpA1M+5CApDQneaKbLqcehDBTjaLQD1fjXXtWrNvq+FgCRDJ1gvZasq13iJfYe3qtLz7n0YGHqEGzZ1lsheWtle/Sg32RlPAUZrHKWPciu7/Fg1k1ca8FsB4="
+  irc: "chat.freenode.net#cerana"
