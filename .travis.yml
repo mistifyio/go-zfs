@@ -1,6 +1,9 @@
 language: go
 sudo: required
 dist: trusty
+cache:
+  directories:
+    - $HOME/.ccache
 
 branches:
   only:
@@ -15,6 +18,7 @@ go:
   - tip
 
 before_install:
+  - export PATH=/usr/lib/ccache:$PATH
   - go get github.com/alecthomas/gometalinter
   - gometalinter --install --update
   - MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
