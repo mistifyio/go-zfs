@@ -363,23 +363,35 @@ func TestDiff(t *testing.T) {
 		ok(t, err)
 		equals(t, 4, len(inodeChanges))
 
-		equals(t, "/test/origin/", inodeChanges[0].Path)
-		equals(t, zfs.Directory, inodeChanges[0].Type)
-		equals(t, zfs.Modified, inodeChanges[0].Change)
+		wants := map[string]*zfs.InodeChange{
+			"/test/origin/linked": &zfs.InodeChange{
+				Type:                 zfs.File,
+				Change:               zfs.Modified,
+				ReferenceCountChange: 1,
+			},
+			"/test/origin/file": &zfs.InodeChange{
+				Type:    zfs.File,
+				Change:  zfs.Renamed,
+				NewPath: "/test/origin/file-new",
+			},
+			"/test/origin/i ❤ unicode": &zfs.InodeChange{
+				Type:   zfs.File,
+				Change: zfs.Created,
+			},
+			"/test/origin/": &zfs.InodeChange{
+				Type:   zfs.Directory,
+				Change: zfs.Modified,
+			},
+		}
+		for _, change := range inodeChanges {
+			want := wants[change.Path]
+			want.Path = change.Path
+			delete(wants, change.Path)
 
-		equals(t, "/test/origin/linked", inodeChanges[1].Path)
-		equals(t, zfs.File, inodeChanges[1].Type)
-		equals(t, zfs.Modified, inodeChanges[1].Change)
-		equals(t, 1, inodeChanges[1].ReferenceCountChange)
+			equals(t, want, change)
+		}
 
-		equals(t, "/test/origin/file", inodeChanges[2].Path)
-		equals(t, "/test/origin/file-new", inodeChanges[2].NewPath)
-		equals(t, zfs.File, inodeChanges[2].Type)
-		equals(t, zfs.Renamed, inodeChanges[2].Change)
-
-		equals(t, "/test/origin/i ❤ unicode", inodeChanges[3].Path)
-		equals(t, zfs.File, inodeChanges[3].Type)
-		equals(t, zfs.Created, inodeChanges[3].Change)
+		equals(t, 0, len(wants))
 
 		ok(t, movedFile.Close())
 		ok(t, unicodeFile.Close())
