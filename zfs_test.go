@@ -363,6 +363,7 @@ func TestDiff(t *testing.T) {
 		ok(t, err)
 		equals(t, 4, len(inodeChanges))
 
+		unicodePath := "/test/origin/i\x040\x1c2\x135\x144\x040unicode"
 		wants := map[string]*zfs.InodeChange{
 			"/test/origin/linked": &zfs.InodeChange{
 				Type:                 zfs.File,
@@ -375,6 +376,12 @@ func TestDiff(t *testing.T) {
 				NewPath: "/test/origin/file-new",
 			},
 			"/test/origin/i ❤ unicode": &zfs.InodeChange{
+				Path:   "❤❤ unicode ❤❤",
+				Type:   zfs.File,
+				Change: zfs.Created,
+			},
+			unicodePath: &zfs.InodeChange{
+				Path:   "❤❤ unicode ❤❤",
 				Type:   zfs.File,
 				Change: zfs.Created,
 			},
@@ -391,7 +398,10 @@ func TestDiff(t *testing.T) {
 			equals(t, want, change)
 		}
 
-		equals(t, 0, len(wants))
+		equals(t, 1, len(wants))
+		for _, want := range wants {
+			equals(t, "❤❤ unicode ❤❤", want.Path)
+		}
 
 		ok(t, movedFile.Close())
 		ok(t, unicodeFile.Close())
