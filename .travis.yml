@@ -1,6 +1,6 @@
 language: go
-sudo: required
 dist: trusty
+sudo: required
 cache:
   directories:
     - $HOME/.ccache
@@ -11,11 +11,11 @@ branches:
 
 env:
   - rel=0.6.5.11
-  - rel=0.7.3
+  - rel=0.7.6
 
 go:
-  - 1.9
-  - tip
+  - "1.10.x"
+  - master
 
 before_install:
   - export MAKEFLAGS=-j$(($(grep -c '^processor' /proc/cpuinfo) * 2 + 1))
