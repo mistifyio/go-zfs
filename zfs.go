@@ -114,7 +114,7 @@ func zfs(arg ...string) error {
 
 // zfs is a helper function to wrap typical calls to zfs.
 func zfsOutput(arg ...string) ([][]string, error) {
-	c := command{Command: "zfs"}
+	c := command{Command: "zfs", timeout: getCommandTimeout()}
 	return c.Run(arg...)
 }
 
