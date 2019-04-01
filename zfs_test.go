@@ -45,7 +45,7 @@ func ok(tb testing.TB, err error) {
 func nok(tb testing.TB, err error) {
 	if err == nil {
 		_, file, line, _ := runtime.Caller(1)
-		fmt.Printf("\033[31m%s:%d: expected error: %s\033[39m\n\n", filepath.Base(file), line)
+		fmt.Printf("\033[31m%s:%d: expected error: %s\033[39m\n\n", filepath.Base(file), line, err.Error())
 		tb.FailNow()
 	}
 }
@@ -363,23 +363,45 @@ func TestDiff(t *testing.T) {
 		ok(t, err)
 		equals(t, 4, len(inodeChanges))
 
-		equals(t, "/test/origin/", inodeChanges[0].Path)
-		equals(t, zfs.Directory, inodeChanges[0].Type)
-		equals(t, zfs.Modified, inodeChanges[0].Change)
+		unicodePath := "/test/origin/i\x040\x1c2\x135\x144\x040unicode"
+		wants := map[string]*zfs.InodeChange{
+			"/test/origin/linked": &zfs.InodeChange{
+				Type:                 zfs.File,
+				Change:               zfs.Modified,
+				ReferenceCountChange: 1,
+			},
+			"/test/origin/file": &zfs.InodeChange{
+				Type:    zfs.File,
+				Change:  zfs.Renamed,
+				NewPath: "/test/origin/file-new",
+			},
+			"/test/origin/i ❤ unicode": &zfs.InodeChange{
+				Path:   "❤❤ unicode ❤❤",
+				Type:   zfs.File,
+				Change: zfs.Created,
+			},
+			unicodePath: &zfs.InodeChange{
+				Path:   "❤❤ unicode ❤❤",
+				Type:   zfs.File,
+				Change: zfs.Created,
+			},
+			"/test/origin/": &zfs.InodeChange{
+				Type:   zfs.Directory,
+				Change: zfs.Modified,
+			},
+		}
+		for _, change := range inodeChanges {
+			want := wants[change.Path]
+			want.Path = change.Path
+			delete(wants, change.Path)
 
-		equals(t, "/test/origin/linked", inodeChanges[1].Path)
-		equals(t, zfs.File, inodeChanges[1].Type)
-		equals(t, zfs.Modified, inodeChanges[1].Change)
-		equals(t, 1, inodeChanges[1].ReferenceCountChange)
+			equals(t, want, change)
+		}
 
-		equals(t, "/test/origin/file", inodeChanges[2].Path)
-		equals(t, "/test/origin/file-new", inodeChanges[2].NewPath)
-		equals(t, zfs.File, inodeChanges[2].Type)
-		equals(t, zfs.Renamed, inodeChanges[2].Change)
-
-		equals(t, "/test/origin/i ❤ unicode", inodeChanges[3].Path)
-		equals(t, zfs.File, inodeChanges[3].Type)
-		equals(t, zfs.Created, inodeChanges[3].Change)
+		equals(t, 1, len(wants))
+		for _, want := range wants {
+			equals(t, "❤❤ unicode ❤❤", want.Path)
+		}
 
 		ok(t, movedFile.Close())
 		ok(t, unicodeFile.Close())
