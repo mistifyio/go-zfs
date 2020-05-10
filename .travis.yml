@@ -12,7 +12,7 @@ branches:
 
 env:
   - rel=0.6.5.11
-  - rel=0.7.6
+  - rel=0.7.13
 
 go:
   - "1.10.x"
