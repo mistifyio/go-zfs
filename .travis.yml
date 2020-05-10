@@ -11,8 +11,9 @@ branches:
     - master
 
 env:
-  - rel=0.6.5.11
-  - rel=0.7.13
+  - rel=0.6.5.11 dl_spl=1
+  - rel=0.7.13 dl_spl=1
+  - rel=0.8.3
 
 go:
   - "1.10.x"
@@ -26,9 +27,9 @@ before_install:
   - sudo apt-get update -y && sudo apt-get install -y libattr1-dev libblkid-dev linux-headers-$(uname -r) tree uuid-dev
   - mkdir -p $HOME/zfs
   - cd $HOME/zfs
-  - if [ ! -d spl-$rel.tar.gz ]; then curl -L https://github.com/openzfs/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz; fi
+  - if [ -n "$dl_spl" ] && [ ! -d spl-$rel.tar.gz ]; then curl -L https://github.com/openzfs/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz; fi
   - if [ ! -d zfs-$rel.tar.gz ]; then curl -L https://github.com/openzfs/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz; fi
-  - (cd spl-$rel && ./configure --prefix=/usr && make && sudo make install)
+  - (if [ -d zfs-$rel.tar.gz ]; then cd spl-$rel && ./configure --prefix=/usr && make && sudo make install; fi)
   - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install)
   - sudo modprobe zfs
   - cd $TRAVIS_BUILD_DIR
