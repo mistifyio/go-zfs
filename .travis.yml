@@ -25,7 +25,7 @@ before_install:
   - export PATH=/usr/lib/ccache:$PATH
   - go get github.com/alecthomas/gometalinter
   - gometalinter --install --update
-  - sudo apt-get update -y && sudo apt-get install -y libattr1-dev libblkid-dev linux-headers-$(uname -r) tree uuid-dev
+  - sudo apt-get update -y && sudo apt-get install -y libattr1-dev libblkid-dev linux-headers-$(uname -r) tree uuid-dev zfs-kmod
   - mkdir -p $HOME/zfs
   - cd $HOME/zfs
   - if [ -n "$dl_spl" ] && [ ! -d spl-$rel.tar.gz ]; then curl -L https://github.com/openzfs/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz; fi
