@@ -95,9 +95,7 @@ type Logger interface {
 
 type defaultLogger struct{}
 
-func (*defaultLogger) Log(cmd []string) {
-	return
-}
+func (*defaultLogger) Log(cmd []string) {}
 
 var logger Logger = &defaultLogger{}
 
