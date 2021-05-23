@@ -340,12 +340,15 @@ func (z *Zpool) parseLine(line []string) error {
 	case "free":
 		err = setUint(&z.Free, val)
 	case "fragmentation":
-		// Trim trailing "%" before parsing uint
-		i := strings.Index(val, "%")
-		if i < 0 {
-			i = len(val)
+		// if no fragmentation determination is enabled, this field is a `-`
+		if val != "-" {
+			// Trim trailing "%" before parsing uint
+			idx := strings.Index(val, "%")
+			if idx < 0 {
+				i = len(val)
+			}
+			err = setUint(&z.Fragmentation, val[:i])
 		}
-		err = setUint(&z.Fragmentation, val[:i])
 	case "readonly":
 		z.ReadOnly = val == "on"
 	case "freeing":
