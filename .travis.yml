@@ -26,8 +26,8 @@ before_install:
   - sudo apt-get update -y && sudo apt-get install -y libattr1-dev libblkid-dev linux-headers-$(uname -r) tree uuid-dev
   - mkdir -p $HOME/zfs
   - cd $HOME/zfs
-  - [[ -d spl-$rel.tar.gz ]] || curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz
-  - [[ -d zfs-$rel.tar.gz ]] || curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz
+  - "[[ -d spl-$rel.tar.gz ]] || curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz"
+  - "[[ -d zfs-$rel.tar.gz ]] || curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz"
   - (cd spl-$rel && ./configure --prefix=/usr && make && sudo make install)
   - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install)
   - sudo modprobe zfs

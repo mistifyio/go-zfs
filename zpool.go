@@ -29,7 +29,7 @@ type Zpool struct {
 
 // zpool is a helper function to wrap typical calls to zpool.
 func zpool(arg ...string) ([][]string, error) {
-	c := command{Command: "zpool"}
+	c := command{Command: "zpool", timeout: getCommandTimeout()}
 	return c.Run(arg...)
 }
 

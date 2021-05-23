@@ -2,28 +2,50 @@ package zfs
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+)
+
+const (
+	cmdtimeoutEnv = "COMMAND_TIMEOUT"
 )
 
 type command struct {
 	Command string
 	Stdin   io.Reader
 	Stdout  io.Writer
+	timeout *time.Duration
+}
+
+func getCommandTimeout() *time.Duration {
+	value := os.Getenv(cmdtimeoutEnv)
+	if timeout, err := time.ParseDuration(value); value != "" && err == nil {
+		return &timeout
+	}
+	return nil
 }
 
 func (c *command) Run(arg ...string) ([][]string, error) {
+	var cmd *exec.Cmd
 
-	cmd := exec.Command(c.Command, arg...)
-
+	if c.timeout == nil {
+		cmd = exec.Command(c.Command, arg...)
+	} else {
+		ctx, cancel := context.WithTimeout(context.TODO(), *c.timeout)
+		defer cancel()
+		cmd = exec.CommandContext(ctx, c.Command, arg...)
+	}
 	var stdout, stderr bytes.Buffer
 
 	if c.Stdout == nil {

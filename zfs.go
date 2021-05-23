@@ -111,7 +111,7 @@ func SetLogger(l Logger) {
 
 // zfs is a helper function to wrap typical calls to zfs.
 func zfs(arg ...string) ([][]string, error) {
-	c := command{Command: "zfs"}
+	c := command{Command: "zfs", timeout: getCommandTimeout()}
 	return c.Run(arg...)
 }
 
