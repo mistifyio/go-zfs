@@ -11,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	zfs "github.com/mistifyio/go-zfs"
+	"github.com/mistifyio/go-zfs"
+	"strings"
 )
 
 func sleep(delay int) {
@@ -105,6 +106,12 @@ func TestDatasetGetProperty(t *testing.T) {
 		prop, err = ds.GetProperty("compression")
 		ok(t, err)
 		equals(t, "off", prop)
+
+		prop, err = ds.GetProperty("creation")
+		ok(t, err)
+		if len(strings.Fields(prop)) != 5 {
+			t.Errorf("expected a string with spaces in it, got: %v", prop)
+		}
 	})
 }
 
