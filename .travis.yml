@@ -1,5 +1,5 @@
 language: go
-dist: trusty
+dist: bionic
 sudo: required
 cache:
   directories:
@@ -11,11 +11,13 @@ branches:
     - master
 
 env:
-  - rel=0.6.5.11
-  - rel=0.7.6
+  - rel=0.6.5.11 dl_spl=1
+  - rel=0.7.13 dl_spl=1
+  - rel=0.8.3
 
 go:
-  - "1.10.x"
+  - "1.13.x"
+  - "1.14.x"
   - master
 
 before_install:
@@ -23,12 +25,12 @@ before_install:
   - export PATH=/usr/lib/ccache:$PATH
   - go get github.com/alecthomas/gometalinter
   - gometalinter --install --update
-  - sudo apt-get update -y && sudo apt-get install -y libattr1-dev libblkid-dev linux-headers-$(uname -r) tree uuid-dev
+  - sudo apt-get update -y && sudo apt-get install -y libattr1-dev libblkid-dev linux-headers-$(uname -r) tree uuid-dev zfs-kmod
   - mkdir -p $HOME/zfs
   - cd $HOME/zfs
-  - [[ -d spl-$rel.tar.gz ]] || curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz
-  - [[ -d zfs-$rel.tar.gz ]] || curl -L https://github.com/zfsonlinux/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz
-  - (cd spl-$rel && ./configure --prefix=/usr && make && sudo make install)
+  - if [ -n "$dl_spl" ] && [ ! -d spl-$rel.tar.gz ]; then curl -L https://github.com/openzfs/zfs/releases/download/zfs-$rel/spl-$rel.tar.gz | tar xz; fi
+  - if [ ! -d zfs-$rel.tar.gz ]; then curl -L https://github.com/openzfs/zfs/releases/download/zfs-$rel/zfs-$rel.tar.gz | tar xz; fi
+  - (if [ -d zfs-$rel.tar.gz ]; then cd spl-$rel && ./configure --prefix=/usr && make && sudo make install; fi)
   - (cd zfs-$rel && ./configure --prefix=/usr && make && sudo make install)
   - sudo modprobe zfs
   - cd $TRAVIS_BUILD_DIR
