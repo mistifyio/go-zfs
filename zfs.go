@@ -329,7 +329,7 @@ func (d *Dataset) GetProperty(key string) (string, error) {
 }
 
 // Rename renames a dataset.
-func (d *Dataset) Rename(name string, createParent bool, recursiveRenameSnapshots bool) (*Dataset, error) {
+func (d *Dataset) Rename(name string, createParent, recursiveRenameSnapshots bool) (*Dataset, error) {
 	args := make([]string, 3, 5)
 	args[0] = "rename"
 	args[1] = d.Name

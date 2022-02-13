@@ -22,7 +22,7 @@ func pow2(x int) int64 {
 	return int64(math.Pow(2, float64(x)))
 }
 
-//https://github.com/benbjohnson/testing
+// https://github.com/benbjohnson/testing
 // assert fails the test if the condition is false.
 func assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
 	if !condition {
@@ -75,7 +75,6 @@ func zpoolTest(t *testing.T, fn func()) {
 	defer pool.Destroy()
 	ok(t, err)
 	fn()
-
 }
 
 func TestDatasets(t *testing.T) {
@@ -109,7 +108,6 @@ func TestDatasetGetProperty(t *testing.T) {
 }
 
 func TestSnapshots(t *testing.T) {
-
 	zpoolTest(t, func() {
 		snapshots, err := zfs.Snapshots("")
 		ok(t, err)
@@ -365,27 +363,27 @@ func TestDiff(t *testing.T) {
 
 		unicodePath := "/test/origin/i\x040\x1c2\x135\x144\x040unicode"
 		wants := map[string]*zfs.InodeChange{
-			"/test/origin/linked": &zfs.InodeChange{
+			"/test/origin/linked": {
 				Type:                 zfs.File,
 				Change:               zfs.Modified,
 				ReferenceCountChange: 1,
 			},
-			"/test/origin/file": &zfs.InodeChange{
+			"/test/origin/file": {
 				Type:    zfs.File,
 				Change:  zfs.Renamed,
 				NewPath: "/test/origin/file-new",
 			},
-			"/test/origin/i ❤ unicode": &zfs.InodeChange{
+			"/test/origin/i ❤ unicode": {
 				Path:   "❤❤ unicode ❤❤",
 				Type:   zfs.File,
 				Change: zfs.Created,
 			},
-			unicodePath: &zfs.InodeChange{
+			unicodePath: {
 				Path:   "❤❤ unicode ❤❤",
 				Type:   zfs.File,
 				Change: zfs.Created,
 			},
-			"/test/origin/": &zfs.InodeChange{
+			"/test/origin/": {
 				Type:   zfs.Directory,
 				Change: zfs.Modified,
 			},
