@@ -99,8 +99,7 @@ func (*defaultLogger) Log([]string) {
 
 var logger Logger = &defaultLogger{}
 
-// SetLogger set a log handler to log all commands including arguments before
-// they are executed.
+// SetLogger set a log handler to log all commands including arguments before they are executed.
 func SetLogger(l Logger) {
 	if l != nil {
 		logger = l
@@ -120,35 +119,31 @@ func zfsOutput(arg ...string) ([][]string, error) {
 }
 
 // Datasets returns a slice of ZFS datasets, regardless of type.
-// A filter argument may be passed to select a dataset with the matching name,
-// or empty string ("") may be used to select all datasets.
+// A filter argument may be passed to select a dataset with the matching name, or empty string ("") may be used to select all datasets.
 func Datasets(filter string) ([]*Dataset, error) {
 	return listByType("all", filter)
 }
 
 // Snapshots returns a slice of ZFS snapshots.
-// A filter argument may be passed to select a snapshot with the matching name,
-// or empty string ("") may be used to select all snapshots.
+// A filter argument may be passed to select a snapshot with the matching name, or empty string ("") may be used to select all snapshots.
 func Snapshots(filter string) ([]*Dataset, error) {
 	return listByType(DatasetSnapshot, filter)
 }
 
 // Filesystems returns a slice of ZFS filesystems.
-// A filter argument may be passed to select a filesystem with the matching name,
-// or empty string ("") may be used to select all filesystems.
+// A filter argument may be passed to select a filesystem with the matching name, or empty string ("") may be used to select all filesystems.
 func Filesystems(filter string) ([]*Dataset, error) {
 	return listByType(DatasetFilesystem, filter)
 }
 
 // Volumes returns a slice of ZFS volumes.
-// A filter argument may be passed to select a volume with the matching name,
-// or empty string ("") may be used to select all volumes.
+// A filter argument may be passed to select a volume with the matching name, or empty string ("") may be used to select all volumes.
 func Volumes(filter string) ([]*Dataset, error) {
 	return listByType(DatasetVolume, filter)
 }
 
-// GetDataset retrieves a single ZFS dataset by name.  This dataset could be
-// any valid ZFS dataset type, such as a clone, filesystem, snapshot, or volume.
+// GetDataset retrieves a single ZFS dataset by name.
+// This dataset could be any valid ZFS dataset type, such as a clone, filesystem, snapshot, or volume.
 func GetDataset(name string) (*Dataset, error) {
 	out, err := zfsOutput("list", "-Hp", "-o", dsPropListOptions, name)
 	if err != nil {
@@ -222,9 +217,8 @@ func (d *Dataset) Mount(overlay bool, options []string) (*Dataset, error) {
 	return GetDataset(d.Name)
 }
 
-// ReceiveSnapshot receives a ZFS stream from the input io.Reader, creates a
-// new snapshot with the specified name, and streams the input data into the
-// newly-created snapshot.
+// ReceiveSnapshot receives a ZFS stream from the input io.Reader.
+// A new snapshot is created with the specified name, and streams the input data into the newly-created snapshot.
 func ReceiveSnapshot(input io.Reader, name string) (*Dataset, error) {
 	c := command{Command: "zfs", Stdin: input}
 	if _, err := c.Run("receive", name); err != nil {
@@ -245,8 +239,7 @@ func (d *Dataset) SendSnapshot(output io.Writer) error {
 	return err
 }
 
-// IncrementalSend sends a ZFS stream of a snapshot to the input io.Writer
-// using the baseSnapshot as the starting point.
+// IncrementalSend sends a ZFS stream of a snapshot to the input io.Writer using the baseSnapshot as the starting point.
 // An error will be returned if the input dataset is not of snapshot type.
 func (d *Dataset) IncrementalSend(baseSnapshot *Dataset, output io.Writer) error {
 	if d.Type != DatasetSnapshot || baseSnapshot.Type != DatasetSnapshot {
@@ -257,9 +250,9 @@ func (d *Dataset) IncrementalSend(baseSnapshot *Dataset, output io.Writer) error
 	return err
 }
 
-// CreateVolume creates a new ZFS volume with the specified name, size, and
-// properties.
-// A full list of available ZFS properties may be found here:
+// CreateVolume creates a new ZFS volume with the specified name, size, and properties.
+//
+// A full list of available ZFS properties may be found in the ZFS manual:
 // https://www.freebsd.org/cgi/man.cgi?zfs(8).
 func CreateVolume(name string, size uint64, properties map[string]string) (*Dataset, error) {
 	args := make([]string, 4, 5)
@@ -277,10 +270,9 @@ func CreateVolume(name string, size uint64, properties map[string]string) (*Data
 	return GetDataset(name)
 }
 
-// Destroy destroys a ZFS dataset. If the destroy bit flag is set, any
-// descendents of the dataset will be recursively destroyed, including snapshots.
-// If the deferred bit flag is set, the snapshot is marked for deferred
-// deletion.
+// Destroy destroys a ZFS dataset.
+// If the destroy bit flag is set, any descendents of the dataset will be recursively destroyed, including snapshots.
+// If the deferred bit flag is set, the snapshot is marked for deferred deletion.
 func (d *Dataset) Destroy(flags DestroyFlag) error {
 	args := make([]string, 1, 3)
 	args[0] = "destroy"
@@ -306,7 +298,8 @@ func (d *Dataset) Destroy(flags DestroyFlag) error {
 }
 
 // SetProperty sets a ZFS property on the receiving dataset.
-// A full list of available ZFS properties may be found here:
+//
+// A full list of available ZFS properties may be found in the ZFS manual:
 // https://www.freebsd.org/cgi/man.cgi?zfs(8).
 func (d *Dataset) SetProperty(key, val string) error {
 	prop := strings.Join([]string{key, val}, "=")
@@ -314,10 +307,10 @@ func (d *Dataset) SetProperty(key, val string) error {
 	return err
 }
 
-// GetProperty returns the current value of a ZFS property from the
-// receiving dataset.
-// A full list of available ZFS properties may be found here:
-// https://www.freebsd.org/cgi/man.cgi?zfs(8).
+// GetProperty returns the current value of a ZFS property from the receiving dataset.
+//
+// A full list of available ZFS properties may be found in the ZFS manual:
+// https://openzfs.github.io/openzfs-docs/man/7/zfsprops.7.html.
 func (d *Dataset) GetProperty(key string) (string, error) {
 	out, err := zfsOutput("get", "-H", key, d.Name)
 	if err != nil {
@@ -351,9 +344,9 @@ func (d *Dataset) Snapshots() ([]*Dataset, error) {
 	return Snapshots(d.Name)
 }
 
-// CreateFilesystem creates a new ZFS filesystem with the specified name and
-// properties.
-// A full list of available ZFS properties may be found here:
+// CreateFilesystem creates a new ZFS filesystem with the specified name and properties.
+//
+// A full list of available ZFS properties may be found in the ZFS manual:
 // https://www.freebsd.org/cgi/man.cgi?zfs(8).
 func CreateFilesystem(name string, properties map[string]string) (*Dataset, error) {
 	args := make([]string, 1, 4)
@@ -370,9 +363,8 @@ func CreateFilesystem(name string, properties map[string]string) (*Dataset, erro
 	return GetDataset(name)
 }
 
-// Snapshot creates a new ZFS snapshot of the receiving dataset, using the
-// specified name.  Optionally, the snapshot can be taken recursively, creating
-// snapshots of all descendent filesystems in a single, atomic operation.
+// Snapshot creates a new ZFS snapshot of the receiving dataset, using the specified name.
+// Optionally, the snapshot can be taken recursively, creating snapshots of all descendent filesystems in a single, atomic operation.
 func (d *Dataset) Snapshot(name string, recursive bool) (*Dataset, error) {
 	args := make([]string, 1, 4)
 	args[0] = "snapshot"
@@ -388,9 +380,8 @@ func (d *Dataset) Snapshot(name string, recursive bool) (*Dataset, error) {
 }
 
 // Rollback rolls back the receiving ZFS dataset to a previous snapshot.
-// Optionally, intermediate snapshots can be destroyed.  A ZFS snapshot
-// rollback cannot be completed without this option, if more recent
-// snapshots exist.
+// Optionally, intermediate snapshots can be destroyed.
+// A ZFS snapshot rollback cannot be completed without this option, if more recent snapshots exist.
 // An error will be returned if the input dataset is not of snapshot type.
 func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 	if d.Type != DatasetSnapshot {
@@ -409,8 +400,7 @@ func (d *Dataset) Rollback(destroyMoreRecent bool) error {
 }
 
 // Children returns a slice of children of the receiving ZFS dataset.
-// A recursion depth may be specified, or a depth of 0 allows unlimited
-// recursion.
+// A recursion depth may be specified, or a depth of 0 allows unlimited recursion.
 func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 	args := []string{"list"}
 	if depth > 0 {
@@ -444,8 +434,7 @@ func (d *Dataset) Children(depth uint64) ([]*Dataset, error) {
 }
 
 // Diff returns changes between a snapshot and the given ZFS dataset.
-// The snapshot name must include the filesystem part as it is possible to
-// compare clones with their origin snapshots.
+// The snapshot name must include the filesystem part as it is possible to compare clones with their origin snapshots.
 func (d *Dataset) Diff(snapshot string) ([]*InodeChange, error) {
 	args := []string{"diff", "-FH", snapshot, d.Name}
 	out, err := zfsOutput(args...)

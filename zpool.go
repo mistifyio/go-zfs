@@ -1,7 +1,8 @@
 package zfs
 
-// ZFS zpool states, which can indicate if a pool is online, offline,
-// degraded, etc.  More information regarding zpool states can be found here:
+// ZFS zpool states, which can indicate if a pool is online, offline, degraded, etc.
+//
+// More information regarding zpool states can be found in the ZFS manual:
 // https://docs.oracle.com/cd/E19253-01/819-5461/gamno/index.html.
 const (
 	ZpoolOnline   = "ONLINE"
@@ -12,8 +13,8 @@ const (
 	ZpoolRemoved  = "REMOVED"
 )
 
-// Zpool is a ZFS zpool.  A pool is a top-level structure in ZFS, and can
-// contain many descendent datasets.
+// Zpool is a ZFS zpool.
+// A pool is a top-level structure in ZFS, and can contain many descendent datasets.
 type Zpool struct {
 	Name          string
 	Health        string
@@ -71,10 +72,10 @@ func (z *Zpool) Snapshots() ([]*Dataset, error) {
 	return Snapshots(z.Name)
 }
 
-// CreateZpool creates a new ZFS zpool with the specified name, properties,
-// and optional arguments.
-// A full list of available ZFS properties and command-line arguments may be
-// found here: https://www.freebsd.org/cgi/man.cgi?zfs(8).
+// CreateZpool creates a new ZFS zpool with the specified name, properties, and optional arguments.
+//
+// A full list of available ZFS properties and command-line arguments may be found in the ZFS manual:
+// https://www.freebsd.org/cgi/man.cgi?zfs(8).
 func CreateZpool(name string, properties map[string]string, args ...string) (*Zpool, error) {
 	cli := make([]string, 1, 4)
 	cli[0] = "create"
