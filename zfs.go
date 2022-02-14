@@ -20,7 +20,7 @@ const (
 // The Type struct member can be used to determine a dataset's type.
 //
 // The field definitions can be found in the ZFS manual:
-// http://www.freebsd.org/cgi/man.cgi?zfs(8).
+// https://openzfs.github.io/openzfs-docs/man/7/zfsprops.7.html.
 type Dataset struct {
 	Name          string
 	Origin        string
@@ -253,7 +253,7 @@ func (d *Dataset) IncrementalSend(baseSnapshot *Dataset, output io.Writer) error
 // CreateVolume creates a new ZFS volume with the specified name, size, and properties.
 //
 // A full list of available ZFS properties may be found in the ZFS manual:
-// https://www.freebsd.org/cgi/man.cgi?zfs(8).
+// https://openzfs.github.io/openzfs-docs/man/7/zfsprops.7.html.
 func CreateVolume(name string, size uint64, properties map[string]string) (*Dataset, error) {
 	args := make([]string, 4, 5)
 	args[0] = "create"
@@ -300,7 +300,7 @@ func (d *Dataset) Destroy(flags DestroyFlag) error {
 // SetProperty sets a ZFS property on the receiving dataset.
 //
 // A full list of available ZFS properties may be found in the ZFS manual:
-// https://www.freebsd.org/cgi/man.cgi?zfs(8).
+// https://openzfs.github.io/openzfs-docs/man/7/zfsprops.7.html.
 func (d *Dataset) SetProperty(key, val string) error {
 	prop := strings.Join([]string{key, val}, "=")
 	err := zfs("set", prop, d.Name)
@@ -347,7 +347,7 @@ func (d *Dataset) Snapshots() ([]*Dataset, error) {
 // CreateFilesystem creates a new ZFS filesystem with the specified name and properties.
 //
 // A full list of available ZFS properties may be found in the ZFS manual:
-// https://www.freebsd.org/cgi/man.cgi?zfs(8).
+// https://openzfs.github.io/openzfs-docs/man/7/zfsprops.7.html.
 func CreateFilesystem(name string, properties map[string]string) (*Dataset, error) {
 	args := make([]string, 1, 4)
 	args[0] = "create"
