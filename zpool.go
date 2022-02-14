@@ -27,8 +27,14 @@ type Zpool struct {
 	DedupRatio    float64
 }
 
+// zpool is a helper function to wrap typical calls to zpool and ignores stdout.
+func zpool(arg ...string) error {
+	_, err := zpoolOutput(arg...)
+	return err
+}
+
 // zpool is a helper function to wrap typical calls to zpool.
-func zpool(arg ...string) ([][]string, error) {
+func zpoolOutput(arg ...string) ([][]string, error) {
 	c := command{Command: "zpool"}
 	return c.Run(arg...)
 }
@@ -37,7 +43,7 @@ func zpool(arg ...string) ([][]string, error) {
 func GetZpool(name string) (*Zpool, error) {
 	args := zpoolArgs
 	args = append(args, name)
-	out, err := zpool(args...)
+	out, err := zpoolOutput(args...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +83,7 @@ func CreateZpool(name string, properties map[string]string, args ...string) (*Zp
 	}
 	cli = append(cli, name)
 	cli = append(cli, args...)
-	_, err := zpool(cli...)
-	if err != nil {
+	if err := zpool(cli...); err != nil {
 		return nil, err
 	}
 
@@ -87,14 +92,14 @@ func CreateZpool(name string, properties map[string]string, args ...string) (*Zp
 
 // Destroy destroys a ZFS zpool by name.
 func (z *Zpool) Destroy() error {
-	_, err := zpool("destroy", z.Name)
+	err := zpool("destroy", z.Name)
 	return err
 }
 
 // ListZpools list all ZFS zpools accessible on the current system.
 func ListZpools() ([]*Zpool, error) {
 	args := []string{"list", "-Ho", "name"}
-	out, err := zpool(args...)
+	out, err := zpoolOutput(args...)
 	if err != nil {
 		return nil, err
 	}
