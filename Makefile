@@ -4,6 +4,7 @@ help: ## Print this help
 all: test ## Run tests
 
 -include rules.mk
+-include lint.mk
 
 test: ## Run tests
 	go test ./...

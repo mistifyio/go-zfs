@@ -10,5 +10,15 @@ in { pkgs ? import (_pkgs.fetchFromGitHub {
 with pkgs;
 
 mkShell {
-  buildInputs = [ git gnumake gnused go nixfmt nodePackages.prettier vagrant ];
+  buildInputs = [
+    git
+    gnumake
+    gnused
+    go
+    nixfmt
+    nodePackages.prettier
+    python3Packages.pip
+    python3Packages.setuptools
+    vagrant
+  ];
 }
