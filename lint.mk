@@ -19,6 +19,23 @@ endif
 LINTERS :=
 FIXERS :=
 
+SHELLCHECK_VERSION ?= v0.8.0
+SHELLCHECK_BIN := out/linters/shellcheck-$(SHELLCHECK_VERSION)-$(LINT_ARCH)
+$(SHELLCHECK_BIN):
+	mkdir -p out/linters
+	rm -rf out/linters/shellcheck-*
+	curl -sSfL https://github.com/koalaman/shellcheck/releases/download/$(SHELLCHECK_VERSION)/shellcheck-$(SHELLCHECK_VERSION).$(LINT_OS_LOWER).$(LINT_ARCH).tar.xz | tar -C out/linters -xJf -
+	mv out/linters/shellcheck-$(SHELLCHECK_VERSION)/shellcheck $@
+	rm -rf out/linters/shellcheck-$(SHELLCHECK_VERSION)/shellcheck
+
+LINTERS += shellcheck-lint
+shellcheck-lint: $(SHELLCHECK_BIN)
+	$(SHELLCHECK_BIN) $(shell find . -name "*.sh")
+
+FIXERS += shellcheck-fix
+shellcheck-fix: $(SHELLCHECK_BIN)
+	$(SHELLCHECK_BIN) $(shell find . -name "*.sh") -f diff | { read -t 1 line || exit 0; { echo "$$line" && cat; } | git apply -p2; }
+
 GOLANGCI_LINT_CONFIG := $(LINT_ROOT)/.golangci.yml
 GOLANGCI_LINT_VERSION ?= v1.43.0
 GOLANGCI_LINT_BIN := out/linters/golangci-lint-$(GOLANGCI_LINT_VERSION)-$(LINT_ARCH)
