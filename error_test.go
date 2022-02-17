@@ -7,7 +7,7 @@ import (
 )
 
 func TestError(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		err    error
 		debug  string
 		stderr string
