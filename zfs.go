@@ -239,6 +239,18 @@ func (d *Dataset) SendSnapshot(output io.Writer) error {
 	return err
 }
 
+// SendSnapshotRaw sends an encrypted ZFS stream of a snapshot to the input io.Writer.
+// An error will be returned if the input dataset is not of snapshot type.
+func (d *Dataset) SendSnapshotRaw(output io.Writer) error {
+	if d.Type != DatasetSnapshot {
+		return errors.New("can only send snapshots")
+	}
+
+	c := command{Command: "zfs", Stdout: output}
+	_, err := c.Run("send", "-w", d.Name)
+	return err
+}
+
 // IncrementalSend sends a ZFS stream of a snapshot to the input io.Writer using the baseSnapshot as the starting point.
 // An error will be returned if the input dataset is not of snapshot type.
 func (d *Dataset) IncrementalSend(baseSnapshot *Dataset, output io.Writer) error {
@@ -247,6 +259,17 @@ func (d *Dataset) IncrementalSend(baseSnapshot *Dataset, output io.Writer) error
 	}
 	c := command{Command: "zfs", Stdout: output}
 	_, err := c.Run("send", "-i", baseSnapshot.Name, d.Name)
+	return err
+}
+
+// IncrementalRawSend sends an encrypted ZFS stream of a snapshot to the input io.Writer using the baseSnapshot as the starting point.
+// An error will be returned if the input dataset is not of snapshot type.
+func (d *Dataset) IncrementalRawSend(baseSnapshot *Dataset, output io.Writer) error {
+	if d.Type != DatasetSnapshot || baseSnapshot.Type != DatasetSnapshot {
+		return errors.New("can only send snapshots")
+	}
+	c := command{Command: "zfs", Stdout: output}
+	_, err := c.Run("send", "-w", "-i", baseSnapshot.Name, d.Name)
 	return err
 }
 
