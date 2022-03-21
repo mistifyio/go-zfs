@@ -22,7 +22,36 @@ jobs:
           nix_path: nixpkgs=channel:nixpkgs-unstable
 
       - name: Install Nix Packages
-        run: nix-env -f shell.nix -i -A buildInputs
+        run: |
+          set -x
+          echo PATHs pre
+          env -0 | while IFS='=' read -r -d '' n v; do
+          	printf "%s\n" "$n"
+          done | sort | tee envs-pre
+          tr ':' '\n' <<<$PATH | sort | tee path-pre
+          tr ':' '\n' <<<$PYTHONPATH | sort | tee pythonpath-pre
+
+          nix-env -f shell.nix -i -A buildInputs
+
+          echo PATHs post
+          env -0 | while IFS='=' read -r -d '' n v; do
+          	printf "%s\n" "$n"
+          done | sort | tee envs-post
+          tr ':' '\n' <<<$PATH | sort | tee path-post
+          tr ':' '\n' <<<$PYTHONPATH | sort | tee pythonpath-post
+          diff -u envs-pre envs-post
+          diff -u path-pre path-post
+          diff -u pythonpath-pre pythonpath-post
+
+      - name: Check Nix Packages
+        run: |
+          set -x
+          echo PATHs
+          env -0 | while IFS='=' read -r -d '' n v; do
+          	printf "%s\n" "$n"
+          done | sort | tee envs-post
+          tr ':' '\n' <<<$PATH | sort
+          tr ':' '\n' <<<$PYTHONPATH | sort
 
       - name: Install Go tools
         run: make tools
@@ -31,7 +60,7 @@ jobs:
         run: make verify
 
       - name: Non Go Formatters
-        run: ./.github/workflows/formatters.sh
+        run: nix-shell --run ./.github/workflows/formatters.sh
 
       - name: Install ZFS
         run: sudo apt-get -y update && sudo apt-get -y install zfsutils-linux
