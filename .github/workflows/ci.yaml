@@ -21,6 +21,23 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixpkgs-unstable
 
+      - name: Multiline env set
+        run: |
+          set -x
+          v=$(printf 'hello\nworld\n')
+          echo "$v" | wc -l
+          echo "v_naive=$v" >>$GITHUB_ENV
+          echo "v_escaped=${v//$'\n'/'%0A'}" >>$GITHUB_ENV
+
+      - name: Multiline env check
+        run: |
+          set -x
+          echo "$v" | wc -l
+          echo "$v_naive"
+          echo "$v_naive" | wc -l
+          echo "$v_escaped="
+          echo "$v_escaped=" | wc -l
+
       - name: Install Nix Packages
         run: |
           set -x
@@ -39,6 +56,7 @@ jobs:
           done | sort | tee envs-post
           tr ':' '\n' <<<$PATH | sort | tee path-post
           tr ':' '\n' <<<$PYTHONPATH | sort | tee pythonpath-post
+
           diff -u envs-pre envs-post
           diff -u path-pre path-post
           diff -u pythonpath-pre pythonpath-post
