@@ -21,14 +21,14 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixpkgs-unstable
 
-      - name: Fetch Nix Derivations
-        run: nix-shell --command true
+      - name: Install Nix Packages
+        run: nix-env -f shell.nix -i -A buildInputs
 
       - name: Install Go tools
-        run: nix-shell --run 'make tools'
+        run: make tools
 
       - name: Linters and Go Formatting
-        run: nix-shell --run 'make verify'
+        run: make verify
 
       - name: Non Go Formatters
         run: ./.github/workflows/formatters.sh
@@ -37,4 +37,4 @@ jobs:
         run: sudo apt-get -y update && sudo apt-get -y install zfsutils-linux
 
       - name: Tests
-        run: nix-shell --run 'sudo make test'
+        run: sudo make test
