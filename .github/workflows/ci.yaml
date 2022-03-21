@@ -9,10 +9,6 @@ jobs:
     env:
       CGO_ENABLED: 0
     steps:
-      - name: Setup Dynamic Env
-        run: |
-          echo "MAKEFLAGS=-j$(nproc)" | tee $GITHUB_ENV
-
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -21,67 +17,24 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixpkgs-unstable
 
-      - name: Multiline env set
-        run: |
-          set -x
-          v=$(printf 'hello\nworld\n')
-          echo "$v" | wc -l
-          echo "v_naive=$v" >>$GITHUB_ENV
-          echo "v_escaped=${v//$'\n'/'%0A'}" >>$GITHUB_ENV
-
-      - name: Multiline env check
-        run: |
-          set -x
-          echo "$v" | wc -l
-          echo "$v_naive"
-          echo "$v_naive" | wc -l
-          echo "$v_escaped="
-          echo "$v_escaped=" | wc -l
-
       - name: Install Nix Packages
         run: |
-          set -x
-          echo PATHs pre
-          env -0 | while IFS='=' read -r -d '' n v; do
-          	printf "%s\n" "$n"
-          done | sort | tee envs-pre
-          tr ':' '\n' <<<$PATH | sort | tee path-pre
-          tr ':' '\n' <<<$PYTHONPATH | sort | tee pythonpath-pre
+          nix-shell --run true
 
-          nix-env -f shell.nix -i -A buildInputs
-
-          echo PATHs post
-          env -0 | while IFS='=' read -r -d '' n v; do
-          	printf "%s\n" "$n"
-          done | sort | tee envs-post
-          tr ':' '\n' <<<$PATH | sort | tee path-post
-          tr ':' '\n' <<<$PYTHONPATH | sort | tee pythonpath-post
-
-          diff -u envs-pre envs-post
-          diff -u path-pre path-post
-          diff -u pythonpath-pre pythonpath-post
-
-      - name: Check Nix Packages
+      - name: Check Nix Packages without direnv
         run: |
           set -x
-          echo PATHs
-          env -0 | while IFS='=' read -r -d '' n v; do
-          	printf "%s\n" "$n"
-          done | sort | tee envs-post
-          tr ':' '\n' <<<$PATH | sort
-          tr ':' '\n' <<<$PYTHONPATH | sort
+          echo PYTHONPATH=$PYTHONPATH
+          which prettier || :
 
-      - name: Install Go tools
-        run: make tools
+      - name: Install Nix Packages & Export Using direnv
+        run: |
+          nix-shell --run true
+          ./direnv allow
+          ./direnv export gha >> "$GITHUB_ENV"
 
-      - name: Linters and Go Formatting
-        run: make verify
-
-      - name: Non Go Formatters
-        run: nix-shell --run ./.github/workflows/formatters.sh
-
-      - name: Install ZFS
-        run: sudo apt-get -y update && sudo apt-get -y install zfsutils-linux
-
-      - name: Tests
-        run: sudo make test
+      - name: Check Nix Packages with direnv
+        run: |
+          set -x
+          echo PYTHONPATH=$PYTHONPATH
+          which prettier
