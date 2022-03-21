@@ -19,6 +19,7 @@ mkShell {
     nodePackages.prettier
     python3Packages.pip
     python3Packages.setuptools
+    rufo
     shfmt
     vagrant
   ];
