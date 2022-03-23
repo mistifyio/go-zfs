@@ -82,7 +82,6 @@ func zpoolTest(t *testing.T, fn func()) {
 }
 
 func TestDatasets(t *testing.T) {
-	t.Helper()
 
 	zpoolTest(t, func() {
 		_, err := zfs.Datasets("")
