@@ -24,47 +24,37 @@ func pow2(x int) int64 {
 
 // https://github.com/benbjohnson/testing
 // assert fails the test if the condition is false.
-func assert(t *testing.T, condition bool, msg string, v ...interface{}) {
+func _assert(t *testing.T, condition bool, msg string, v ...interface{}) {
 	t.Helper()
 
 	if !condition {
-		_, file, line, _ := runtime.Caller(1)
+		_, file, line, _ := runtime.Caller(2)
 		fmt.Printf("\033[31m%s:%d: "+msg+"\033[39m\n\n", append([]interface{}{filepath.Base(file), line}, v...)...)
 		t.FailNow()
 	}
 }
 
+func assert(t *testing.T, condition bool, msg string, v ...interface{}) {
+	t.Helper()
+	_assert(t, condition, msg, v...)
+}
+
 // ok fails the test if an err is not nil.
 func ok(t *testing.T, err error) {
 	t.Helper()
-
-	if err != nil {
-		_, file, line, _ := runtime.Caller(1)
-		fmt.Printf("\033[31m%s:%d: unexpected error: %s\033[39m\n\n", filepath.Base(file), line, err.Error())
-		t.FailNow()
-	}
+	_assert(t, err == nil, "unexpected error: %v", err)
 }
 
 // nok fails the test if an err is nil.
 func nok(t *testing.T, err error) {
 	t.Helper()
-
-	if err == nil {
-		_, file, line, _ := runtime.Caller(1)
-		fmt.Printf("\033[31m%s:%d: expected error: %s\033[39m\n\n", filepath.Base(file), line, err.Error())
-		t.FailNow()
-	}
+	_assert(t, err != nil, "expected error, got nil")
 }
 
 // equals fails the test if exp is not equal to act.
 func equals(t *testing.T, exp, act interface{}) {
 	t.Helper()
-
-	if !reflect.DeepEqual(exp, act) {
-		_, file, line, _ := runtime.Caller(1)
-		fmt.Printf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n", filepath.Base(file), line, exp, act)
-		t.FailNow()
-	}
+	_assert(t, reflect.DeepEqual(exp, act), "exp: %#v\n\ngot: %#v", exp, act)
 }
 
 func zpoolTest(t *testing.T, fn func()) {
