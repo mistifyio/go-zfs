@@ -60,20 +60,24 @@ func equals(t *testing.T, exp, act interface{}) {
 func zpoolTest(t *testing.T, fn func()) {
 	t.Helper()
 
+	d, err := ioutil.TempDir("/tmp/", "zfs-test-*")
+	ok(t, err)
+	defer os.RemoveAll(d)
+
 	tempfiles := make([]string, 3)
 	for i := range tempfiles {
-		f, _ := ioutil.TempFile("/tmp/", "zfs-")
-		err := f.Truncate(pow2(30))
-		f.Close()
+		f, err := ioutil.TempFile(d, fmt.Sprintf("loop%d", i))
 		ok(t, err)
+
+		ok(t, f.Truncate(pow2(30)))
+
+		f.Close()
 		tempfiles[i] = f.Name()
-		defer os.Remove(f.Name()) // nolint:revive // its ok to defer to end of func
 	}
 
 	pool, err := zfs.CreateZpool("test", nil, tempfiles...)
 	ok(t, err)
 	defer pool.Destroy()
-	ok(t, err)
 	fn()
 }
 
