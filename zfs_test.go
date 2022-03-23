@@ -29,7 +29,7 @@ func _assert(t *testing.T, condition bool, msg string, v ...interface{}) {
 
 	if !condition {
 		_, file, line, _ := runtime.Caller(2)
-		fmt.Printf("\033[31m%s:%d: "+msg+"\033[39m\n\n", append([]interface{}{filepath.Base(file), line}, v...)...)
+		t.Logf("\033[31m%s:%d: "+msg+"\033[39m\n\n", append([]interface{}{filepath.Base(file), line}, v...)...)
 		t.FailNow()
 	}
 }
