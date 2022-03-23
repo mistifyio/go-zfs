@@ -18,6 +18,10 @@ if ! nixfmt shell.nix; then
 	failed=1
 fi
 
+if ! rufo Vagrantfile; then
+	failed=1
+fi
+
 if ! git diff | (! grep .); then
 	failed=1
 fi
