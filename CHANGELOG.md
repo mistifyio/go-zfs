@@ -6,6 +6,8 @@ This change log follows the advice of [Keep a CHANGELOG](https://github.com/oliv
 
 ## [Unreleased]
 
+## [3.0.0] - 2022-03-30
+
 ### Added
 
 - Rename, Mount and Unmount methods
@@ -241,6 +243,7 @@ This change log follows the advice of [Keep a CHANGELOG](https://github.com/oliv
     Matt Layher (1):
       Add Error struct type and tests, enabling easier error return checking
 
+[3.0.0]: https://github.com/mistifyio/go-zfs/compare/v2.1.1...v3.0.0
 [2.1.1]: https://github.com/mistifyio/go-zfs/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/mistifyio/go-zfs/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/mistifyio/go-zfs/compare/v1.0.0...v2.0.0
