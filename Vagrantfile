@@ -7,6 +7,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/mistifyio/go-zfs", create: true
 
   config.vm.provision "shell", inline: <<EOF
+set -euxo pipefail
+
 cat << END > /etc/profile.d/go.sh
 export GOPATH=\\$HOME/go
 export PATH=\\$GOPATH/bin:/usr/local/go/bin:\\$PATH
