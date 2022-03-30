@@ -1,7 +1,7 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "ubuntu/trusty64"
+  config.vm.box = "generic/ubuntu2004"
   config.ssh.forward_agent = true
 
   config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/mistifyio/go-zfs", create: true
@@ -16,11 +16,8 @@ END
 
 chown -R vagrant /home/vagrant/go
 
-apt-get update
-apt-get install -y software-properties-common curl
-apt-add-repository --yes ppa:zfs-native/stable
-apt-get update
-apt-get install -y ubuntu-zfs
+apt-get update -y
+apt-get install -y zfsutils-linux
 
 cd /home/vagrant
 curl -z go1.3.3.linux-amd64.tar.gz -L -O https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz
