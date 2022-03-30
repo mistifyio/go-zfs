@@ -1,6 +1,4 @@
-VAGRANTFILE_API_VERSION = "2"
-
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+Vagrant.configure("2") do |config|
   config.vm.box = "generic/ubuntu2004"
   config.ssh.forward_agent = true
 
@@ -14,14 +12,14 @@ export GOPATH=\\$HOME/go
 export PATH=\\$GOPATH/bin:/usr/local/go/bin:\\$PATH
 END
 
-chown -R vagrant /home/vagrant/go
-
 apt-get update -y
 apt-get install -y zfsutils-linux
 
+chown -R vagrant:vagrant /home/vagrant/go
 cd /home/vagrant
-curl -z go1.3.3.linux-amd64.tar.gz -L -O https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz
-tar -C /usr/local -zxf /home/vagrant/go1.3.3.linux-amd64.tar.gz
+curl -fLO --retry-max-time 30 --retry 10 https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz
+tar -C /usr/local -zxf go1.3.3.linux-amd64.tar.gz
+rm -rf go*.tar.gz
 
 cat << END > /etc/sudoers.d/go
 Defaults env_keep += "GOPATH"
