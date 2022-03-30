@@ -1,32 +1,33 @@
-VAGRANTFILE_API_VERSION = "2"
+GOVERSION = "1.17.8"
 
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "ubuntu/trusty64"
+Vagrant.configure("2") do |config|
+  config.vm.define "ubuntu" do |ubuntu|
+    ubuntu.vm.box = "generic/ubuntu2004"
+  end
+  config.vm.define "freebsd" do |freebsd|
+    freebsd.vm.box = "generic/freebsd13"
+  end
   config.ssh.forward_agent = true
-
   config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/mistifyio/go-zfs", create: true
+  config.vm.provision "shell", inline: <<-EOF
+    set -euxo pipefail
 
-  config.vm.provision "shell", inline: <<EOF
-cat << END > /etc/profile.d/go.sh
-export GOPATH=\\$HOME/go
-export PATH=\\$GOPATH/bin:/usr/local/go/bin:\\$PATH
-END
+    os=$(uname -s|tr '[A-Z]' '[a-z]')
+    case $os in
+    linux) apt-get update -y && apt-get install -y --no-install-recommends gcc libc-dev zfsutils-linux ;;
+    esac
 
-chown -R vagrant /home/vagrant/go
+    cd /tmp
+    curl -fLO --retry-max-time 30 --retry 10 https://go.dev/dl/go#{GOVERSION}.$os-amd64.tar.gz
+    tar -C /usr/local -zxf go#{GOVERSION}.$os-amd64.tar.gz
+    ln -nsf /usr/local/go/bin/go /usr/local/bin/go
+    rm -rf go*.tar.gz
 
-apt-get update
-apt-get install -y software-properties-common curl
-apt-add-repository --yes ppa:zfs-native/stable
-apt-get update
-apt-get install -y ubuntu-zfs
-
-cd /home/vagrant
-curl -z go1.3.3.linux-amd64.tar.gz -L -O https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz
-tar -C /usr/local -zxf /home/vagrant/go1.3.3.linux-amd64.tar.gz
-
-cat << END > /etc/sudoers.d/go
-Defaults env_keep += "GOPATH"
-END
-
-EOF
+    chown -R vagrant:vagrant /home/vagrant/go
+    cd /home/vagrant/go/src/github.com/mistifyio/go-zfs
+    go test -c
+    sudo ./go-zfs.test -test.v
+    CGO_ENABLED=0 go test -c
+    sudo ./go-zfs.test -test.v
+  EOF
 end
