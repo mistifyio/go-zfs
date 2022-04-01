@@ -21,3 +21,11 @@ pull_request_rules:
           {{ title }} (#{{ number }})
 
           {{ body }}
+
+  - name: remove ready-to-merge label when no longer needed
+    conditions:
+      - closed
+    actions:
+      label:
+        remove:
+          - ready-to-merge
