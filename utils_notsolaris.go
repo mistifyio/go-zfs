@@ -15,5 +15,5 @@ var (
 	zpoolPropList = []string{"name", "health", "allocated", "size", "free", "readonly", "dedupratio", "fragmentation", "freeing", "leaked"}
 
 	zpoolPropListOptions = strings.Join(zpoolPropList, ",")
-	zpoolArgs            = []string{"-p", zpoolPropListOptions, "get"}
+	zpoolArgs            = []string{"-Hp", zpoolPropListOptions, "get"}
 )
