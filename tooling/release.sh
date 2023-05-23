@@ -19,7 +19,7 @@ ghnotes=$(
 		--header "X-GitHub-Api-Version: 2022-11-28" \
 		--field "tag_name=$tag" \
 		--jq .body \
-		repos/{owner}/{repo}/releases/generate-notes
+		'repos/{owner}/{repo}/releases/generate-notes'
 )
 
 range=$(awk -F/ 'END {print $NF}' <<<"$ghnotes")
