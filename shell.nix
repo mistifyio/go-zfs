@@ -9,8 +9,8 @@ in { pkgs ? import (_pkgs.fetchFromGitHub {
 
 with pkgs;
 
-mkShell {
-  buildInputs = [
+mkShellNoCC {
+  packages = [
     git
     gnumake
     gnused

@@ -1,6 +1,4 @@
-#!/usr/bin/env nix-shell
-#!nix-shell -i bash ../../shell.nix
-#shellcheck shell=bash
+#!/usr/bin/env bash
 
 set -eux
 
