@@ -36,7 +36,7 @@ func zpool(arg ...string) error {
 
 // zpool is a helper function to wrap typical calls to zpool.
 func zpoolOutput(arg ...string) ([][]string, error) {
-	c := command{Command: "zpool"}
+	c := command{Command: "zpool", timeout: getCommandTimeout()}
 	return c.Run(arg...)
 }
 
