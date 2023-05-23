@@ -31,9 +31,15 @@ shortlog=$(git shortlog -w0 --no-merges "$range")
 gh release create "$tag" --notes "
 $ghnotes
 
+## Diffstat
+\`\`\`
 $diffstat
+\`\`\`
 
+## Shortlog
+\`\`\`
 $shortlog
+\`\`\`
 
 $fullchangelog
 "
