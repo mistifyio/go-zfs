@@ -13,7 +13,7 @@ require (
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	golang.org/x/mod v0.5.1 // indirect
-	golang.org/x/sys v0.0.0-20211213223007-03aa0b5f6827 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/tools v0.1.8 // indirect
 	k8s.io/klog/v2 v2.10.0 // indirect
 )
