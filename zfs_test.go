@@ -38,7 +38,7 @@ func TestDatasetGetProperty(t *testing.T) {
 
 	prop, err = ds.GetProperty("compression")
 	ok(t, err)
-	equals(t, "off", prop)
+	equals(t, "on", prop)
 
 	// creation should be a time stamp with spaces in it
 	prop, err = ds.GetProperty("creation")
