@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	zfs "github.com/mistifyio/go-zfs/v3"
+	zfs "github.com/mistifyio/go-zfs/v4"
 )
 
 func TestDatasets(t *testing.T) {
