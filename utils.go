@@ -59,13 +59,16 @@ func (c *command) Run(arg ...string) ([][]string, error) {
 	cmd.Stderr = &stderr
 
 	id := uuid.New().String()
-	joinedArgs := strings.Join(cmd.Args, " ")
+	joinedArgs := cmd.Path
+	if len(cmd.Args) > 1 {
+		joinedArgs = strings.Join(append([]string{cmd.Path}, cmd.Args[1:]...), " ")
+	}
 
 	logger.Log([]string{"ID:" + id, "START", joinedArgs})
 	if err := cmd.Run(); err != nil {
 		return nil, &Error{
 			Err:    err,
-			Debug:  strings.Join([]string{cmd.Path, joinedArgs[1:]}, " "),
+			Debug:  joinedArgs,
 			Stderr: stderr.String(),
 		}
 	}
