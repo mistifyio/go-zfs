@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
+	"strconv"
 	"testing"
 
 	zfs "github.com/mistifyio/go-zfs/v3"
@@ -40,11 +40,13 @@ func TestDatasetGetProperty(t *testing.T) {
 	ok(t, err)
 	equals(t, "on", prop)
 
-	// creation should be a time stamp with spaces in it
+	// creation should be a numeric timestamp
 	prop, err = ds.GetProperty("creation")
 	ok(t, err)
-	if len(strings.Fields(prop)) != 5 {
-		t.Errorf("expected a string with spaces in it, got: %v", prop)
+
+	_, err = strconv.ParseInt(prop, 10, 64)
+	if err != nil {
+		t.Errorf("expected a numeric timestamp, got: %v", prop)
 	}
 }
 
