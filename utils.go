@@ -2,6 +2,7 @@ package zfs
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -10,9 +11,36 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
+	"syscall"
+	"time"
 
 	"github.com/google/uuid"
 )
+
+// Runner specifies the parameters used when executing ZFS commands.
+type Runner struct {
+	// Timeout specifies how long to wait before sending a SIGTERM signal to the running process.
+	Timeout time.Duration
+
+	// Grace specifies the time waited after signaling the running process with SIGTERM before it is forcefully
+	// killed with SIGKILL.
+	Grace time.Duration
+}
+
+var defaultRunner atomic.Value
+
+func init() {
+	defaultRunner.Store(&Runner{})
+}
+
+func Default() *Runner {
+	return defaultRunner.Load().(*Runner) //nolint: forcetypeassert // Impossible for it to be anything else.
+}
+
+func SetRunner(runner *Runner) {
+	defaultRunner.Store(runner)
+}
 
 type command struct {
 	Command string
@@ -21,7 +49,19 @@ type command struct {
 }
 
 func (c *command) Run(arg ...string) ([][]string, error) {
-	cmd := exec.Command(c.Command, arg...)
+	var cmd *exec.Cmd
+	if Default().Timeout == 0 {
+		cmd = exec.Command(c.Command, arg...)
+	} else {
+		ctx, cancel := context.WithTimeout(context.Background(), Default().Timeout)
+		defer cancel()
+
+		cmd = exec.CommandContext(ctx, c.Command, arg...)
+		cmd.Cancel = func() error {
+			return cmd.Process.Signal(syscall.SIGTERM)
+		}
+		cmd.WaitDelay = Default().Grace
+	}
 
 	var stdout, stderr bytes.Buffer
 
@@ -37,13 +77,16 @@ func (c *command) Run(arg ...string) ([][]string, error) {
 	cmd.Stderr = &stderr
 
 	id := uuid.New().String()
-	joinedArgs := strings.Join(cmd.Args, " ")
+	joinedArgs := cmd.Path
+	if len(cmd.Args) > 1 {
+		joinedArgs = strings.Join(append([]string{cmd.Path}, cmd.Args[1:]...), " ")
+	}
 
 	logger.Log([]string{"ID:" + id, "START", joinedArgs})
 	if err := cmd.Run(); err != nil {
 		return nil, &Error{
 			Err:    err,
-			Debug:  strings.Join([]string{cmd.Path, joinedArgs[1:]}, " "),
+			Debug:  joinedArgs,
 			Stderr: stderr.String(),
 		}
 	}
@@ -61,7 +104,7 @@ func (c *command) Run(arg ...string) ([][]string, error) {
 	output := make([][]string, len(lines))
 
 	for i, l := range lines {
-		output[i] = strings.Fields(l)
+		output[i] = strings.Split(l, "\t")
 	}
 
 	return output, nil
